@@ -735,6 +735,46 @@
         </div>
     </div>
 
+    <!-- Modal 10: Day Note (予定・祝日) Modal -->
+    <div id="day-note-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+        <div class="bg-white rounded-2xl border-2 border-slate-800 max-w-lg w-full p-5 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base sm:text-lg">
+                    <i class="fa-solid fa-calendar-day text-emerald-600"></i>
+                    <span>予定・祝日の設定</span>
+                </h3>
+                <button onclick="closeModal('day-note-modal')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <p id="dayNoteModalDateLabel" class="text-xs font-bold text-slate-500 -mt-2"></p>
+
+            <div class="space-y-3 text-xs sm:text-sm">
+                <div class="p-3 rounded-xl border-2 border-amber-200 bg-amber-50/50 space-y-1.5">
+                    <label class="block text-amber-900 font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-note-sticky text-amber-600"></i> 予定
+                    </label>
+                    <textarea id="dayNoteEventInput" rows="2" class="w-full p-2.5 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs sm:text-sm resize-none bg-white" placeholder="例: 内科検診・遠足"></textarea>
+                </div>
+
+                <div class="p-3 rounded-xl border-2 border-rose-200 bg-rose-50/50 space-y-1.5">
+                    <label class="block text-rose-900 font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-flag text-rose-600"></i> 祝日
+                    </label>
+                    <input type="text" id="dayNoteHolidayInput" class="w-full p-2.5 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:outline-none text-xs sm:text-sm bg-white" placeholder="例: 開校記念日">
+                    <p class="text-[11px] text-rose-700 leading-snug">
+                        <i class="fa-solid fa-circle-info mr-1"></i>入力すると、この日の時間割が祝日名でブロック表示されます。空欄で保存すると祝日設定が解除されます。
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex gap-2 pt-2 border-t border-slate-100">
+                <button onclick="closeModal('day-note-modal')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold text-xs">キャンセル</button>
+                <button onclick="saveDayNoteFromModal()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-[2px_2px_0px_#1e293b]">決定する</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Archive Detail Modal -->
     <div id="archive-detail-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
         <div class="bg-white rounded-2xl border-2 border-slate-800 max-w-lg w-full p-5 shadow-2xl space-y-4">
@@ -910,90 +950,33 @@
             return SUBJECT_COLORS[subjectName] || 'bg-slate-100 text-slate-800 border-slate-300';
         }
 
-        function getFixedHoliday(year, month, day, dayOfWeek) {
-            function isNthMonday(nth) {
-                if (dayOfWeek !== 1) return false;
-                return Math.floor((day - 1) / 7) + 1 === nth;
-            }
-            function getVernalEquinoxDay(y) {
-                return Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
-            }
-            function getAutumnalEquinoxDay(y) {
-                return Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
-            }
-
-            if (month === 1) {
-                if (day === 1) return "元日";
-                if (isNthMonday(2)) return "成人の日";
-            } else if (month === 2) {
-                if (day === 11) return "建国記念の日";
-                if (day === 23) return "天皇誕生日";
-            } else if (month === 3) {
-                if (day === getVernalEquinoxDay(year)) return "春分の日";
-            } else if (month === 4) {
-                if (day === 29) return "昭和の日";
-            } else if (month === 5) {
-                if (day === 3) return "憲法記念日";
-                if (day === 4) return "みどりの日";
-                if (day === 5) return "こどもの日";
-            } else if (month === 7) {
-                if (isNthMonday(3)) return "海の日";
-            } else if (month === 8) {
-                if (day === 11) return "山の日";
-            } else if (month === 9) {
-                if (isNthMonday(3)) return "敬老の日";
-                if (day === getAutumnalEquinoxDay(year)) return "秋分の日";
-            } else if (month === 10) {
-                if (isNthMonday(2)) return "スポーツの日";
-            } else if (month === 11) {
-                if (day === 3) return "文化の日";
-                if (day === 23) return "勤労感謝の日";
-            }
-            return null;
+        // Day Notes (予定・祝日) - manually registered per calendar date, independent of week/grade
+        function getDateKey(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
         }
 
-        function getJapaneseHoliday(dateObj) {
-            const year = dateObj.getFullYear();
-            const month = dateObj.getMonth() + 1;
-            const day = dateObj.getDate();
-            const dayOfWeek = dateObj.getDay();
-
-            let name = getFixedHoliday(year, month, day, dayOfWeek);
-            if (name) return name;
-
-            // Check Substitute Holiday
-            const prevDate = new Date(dateObj);
-            let daysBack = 0;
-            while (daysBack < 7) {
-                daysBack++;
-                prevDate.setDate(prevDate.getDate() - 1);
-                const pYear = prevDate.getFullYear();
-                const pMonth = prevDate.getMonth() + 1;
-                const pDay = prevDate.getDate();
-                const pDayOfWeek = prevDate.getDay();
-
-                const pName = getFixedHoliday(pYear, pMonth, pDay, pDayOfWeek);
-                if (pName) {
-                    if (pDayOfWeek === 0) {
-                        return "振替休日";
-                    }
-                } else {
-                    break;
-                }
+        function loadDayNotes() {
+            const saved = localStorage.getItem('edu_day_notes');
+            if (saved) {
+                try { return JSON.parse(saved); } catch(e) {}
             }
+            return {};
+        }
 
-            // Check National Holiday
-            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                const prev = new Date(year, month - 1, day - 1);
-                const next = new Date(year, month - 1, day + 1);
-                const prevH = getFixedHoliday(prev.getFullYear(), prev.getMonth() + 1, prev.getDate(), prev.getDay());
-                const nextH = getFixedHoliday(next.getFullYear(), next.getMonth() + 1, next.getDate(), next.getDay());
-                if (prevH && nextH) {
-                    return "国民の休日";
-                }
-            }
+        function saveDayNotes(notes) {
+            localStorage.setItem('edu_day_notes', JSON.stringify(notes));
+        }
 
-            return null;
+        function getDayNote(dateKey) {
+            const notes = loadDayNotes();
+            return notes[dateKey] || {};
+        }
+
+        function getHolidayName(dateKey) {
+            return getDayNote(dateKey).holiday || null;
         }
 
         const ALL_GRADES = ['1年生', '2年生', '3年生', '4年生', '5年生', '6年生', '特支', 'その他'];
@@ -1018,6 +1001,8 @@
         let activeSpTargetGrade = null;
         let selectedSpSubject = '';
         let selectedSpHours = 1;
+
+        let activeDayNoteKey = null;
 
         const ALL_DAYS = [
             { key: 'Mon', label: '月' },
@@ -1189,16 +1174,22 @@
             }
 
             const savedData = loadCurrentWeekData();
+            const dayNotes = loadDayNotes();
 
             let headerHtml = `<th class="w-20 md:w-24 p-2 text-center font-bold text-slate-700 bg-slate-200 border border-slate-800">時限/時間</th>`;
             const dayHolidayMap = [];
+            const dayKeyMap = [];
+            const dayLabelMap = [];
 
             daysToShow.forEach((day, idx) => {
                 const d = new Date(currentMonday);
                 d.setDate(currentMonday.getDate() + idx);
                 const m = d.getMonth() + 1;
                 const dateNum = d.getDate();
-                const holidayName = getJapaneseHoliday(d);
+                const dateKey = getDateKey(d);
+                dayKeyMap.push(dateKey);
+                dayLabelMap.push(`${d.getFullYear()}年${m}月${dateNum}日（${day.label}）`);
+                const holidayName = (dayNotes[dateKey] || {}).holiday || null;
                 dayHolidayMap.push(holidayName);
 
                 if (holidayName) {
@@ -1236,10 +1227,37 @@
                 { id: 'other', label: 'その他', type: 'text' }
             ];
 
+            const totalRowsCount = periodRows.length;
             const tbody = table.querySelector('tbody');
             tbody.innerHTML = '';
 
-            periodRows.forEach(pRow => {
+            // 予定 row - sits between the day-of-week header and 1時間目, independent of 祝日 blocking
+            const eventTr = document.createElement('tr');
+            eventTr.className = "divide-x divide-slate-800 border-b-2 border-slate-800 bg-amber-50/30";
+            eventTr.innerHTML = `<th class="p-2 text-center font-bold text-slate-700 bg-slate-100 border border-slate-800 text-xs sm:text-sm">予定</th>`;
+            daysToShow.forEach((day, dayIdx) => {
+                const dateKey = dayKeyMap[dayIdx];
+                const note = dayNotes[dateKey] || {};
+                const holidayName = dayHolidayMap[dayIdx];
+                const td = document.createElement('td');
+                td.className = "p-1.5 border border-slate-800 hover:bg-amber-50/60 cursor-pointer transition-colors align-top min-h-[40px]";
+                let innerContent = '';
+                if (holidayName) {
+                    innerContent += `<div class="mb-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-extrabold"><i class="fa-solid fa-flag"></i>${escapeHtml(holidayName)}</div>`;
+                }
+                if (note.event) {
+                    innerContent += `<div class="p-1.5 rounded-lg bg-amber-50/90 text-slate-800 border border-amber-200 font-bold text-xs shadow-sm"><p class="text-[11px] font-medium leading-tight text-slate-700">${escapeHtml(note.event)}</p></div>`;
+                }
+                if (!innerContent) {
+                    innerContent = `<div class="h-full min-h-[32px] flex items-center justify-center text-slate-300 hover:text-slate-500 text-xs font-semibold">+ 追加</div>`;
+                }
+                td.innerHTML = innerContent;
+                td.onclick = () => openDayNoteModal(dateKey, dayLabelMap[dayIdx]);
+                eventTr.appendChild(td);
+            });
+            tbody.appendChild(eventTr);
+
+            periodRows.forEach((pRow, rIdx) => {
                 const tr = document.createElement('tr');
                 tr.className = "divide-x divide-slate-800 border-b border-slate-800";
 
@@ -1259,6 +1277,27 @@
                 }
 
                 daysToShow.forEach((day, dayIdx) => {
+                    const holidayName = dayHolidayMap[dayIdx];
+
+                    if (holidayName) {
+                        // On holidays: merge 1時間目 through その他 into a single blocked vertical cell
+                        if (rIdx === 0) {
+                            const holidayTd = document.createElement('td');
+                            holidayTd.rowSpan = totalRowsCount;
+                            holidayTd.className = "bg-rose-50/80 text-rose-800 border-2 border-slate-800 text-center align-middle p-3 font-bold select-none cursor-not-allowed";
+                            holidayTd.innerHTML = `
+                                <div class="flex flex-col items-center justify-center h-full w-full py-6 space-y-3">
+                                    <i class="fa-solid fa-flag text-rose-500 text-xl sm:text-2xl"></i>
+                                    <div class="writing-vertical text-base sm:text-lg font-bold tracking-widest text-rose-800" style="writing-mode: vertical-rl; text-orientation: upright;">
+                                        ${holidayName}
+                                    </div>
+                                </div>
+                            `;
+                            tr.appendChild(holidayTd);
+                        }
+                        return;
+                    }
+
                     const td = document.createElement('td');
                     td.className = "p-1.5 align-top border border-slate-800 bg-white hover:bg-slate-50/80 transition-colors";
 
@@ -1450,6 +1489,35 @@
             showToast("教科情報を保存しました");
         }
 
+        // Day Note (予定・祝日) Modal
+        function openDayNoteModal(dateKey, displayLabel) {
+            activeDayNoteKey = dateKey;
+            const note = getDayNote(dateKey);
+            document.getElementById('dayNoteEventInput').value = note.event || '';
+            document.getElementById('dayNoteHolidayInput').value = note.holiday || '';
+            const labelEl = document.getElementById('dayNoteModalDateLabel');
+            if (labelEl) labelEl.textContent = displayLabel || '';
+            openModal('day-note-modal');
+        }
+
+        function saveDayNoteFromModal() {
+            if (!activeDayNoteKey) return;
+            const event = document.getElementById('dayNoteEventInput').value.trim();
+            const holiday = document.getElementById('dayNoteHolidayInput').value.trim();
+            const notes = loadDayNotes();
+
+            if (!event && !holiday) {
+                delete notes[activeDayNoteKey];
+            } else {
+                notes[activeDayNoteKey] = { event, holiday };
+            }
+
+            saveDayNotes(notes);
+            closeModal('day-note-modal');
+            renderScheduleTable();
+            showToast('予定・祝日を更新しました');
+        }
+
         function openSpSubjectModal(cellId) {
             activeSpCellId = cellId;
             const [dayKey, pId] = cellId.split('_');
@@ -1639,9 +1707,9 @@
             ALL_DAYS.slice(0, 5).forEach((day, idx) => {
                 const d = new Date(currentMonday);
                 d.setDate(currentMonday.getDate() + idx);
-                const holiday = getJapaneseHoliday(d);
+                const holiday = getHolidayName(getDateKey(d));
 
-                if (holiday) return; // Skip Japanese national holidays
+                if (holiday) return; // Skip holiday-registered days
 
                 if (!currentData[day.key]) currentData[day.key] = {};
                 const dayTpl = tpl[day.key] || {};
@@ -1783,7 +1851,7 @@
                 const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
                 const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
                 const dayLabel = dayLabels[dayOfWeek];
-                const holiday = getJapaneseHoliday(dateObj);
+                const holiday = getHolidayName(getDateKey(dateObj));
 
                 const monday = getMonday(dateObj);
                 const scheduleData = JSON.parse(localStorage.getItem(getScheduleStorageKeyForDate(monday)) || '{}');
