@@ -300,6 +300,12 @@
                 </div>
             </header>
 
+            <div id="archiveViewBanner" class="hidden no-print bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 text-xs sm:text-sm text-amber-900 font-bold flex items-center gap-2">
+                <i class="fa-solid fa-box-archive text-amber-600 text-base"></i>
+                <span id="archiveViewBannerText">アーカイブを閲覧中です</span>
+                <span class="text-[11px] font-semibold text-amber-800 ml-auto">ホームへ戻ると今年度の表示に戻ります</span>
+            </div>
+
             <main class="w-full">
                 <div class="w-full bg-white rounded-2xl shadow-md border-2 border-slate-800 p-3 sm:p-4 print-container overflow-x-auto">
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
@@ -894,6 +900,7 @@
         const SUBJECTS = [
             { name: '', label: '未選択' },
             { name: '国語', label: '国語' },
+            { name: '書写', label: '書写' },
             { name: '社会', label: '社会' },
             { name: '算数', label: '算数' },
             { name: '理科', label: '理科' },
@@ -927,6 +934,7 @@
 
         const SUBJECT_COLORS = {
             '国語': 'bg-rose-100 text-rose-950 border-rose-300',
+            '書写': 'bg-rose-50 text-rose-900 border-rose-400',
             '社会': 'bg-orange-100 text-orange-950 border-orange-300',
             '算数': 'bg-blue-100 text-blue-950 border-blue-300',
             '理科': 'bg-emerald-100 text-emerald-950 border-emerald-300',
@@ -945,6 +953,12 @@
             '行事': 'bg-fuchsia-100 text-fuchsia-950 border-fuchsia-300',
             '委・ク': 'bg-teal-100 text-teal-950 border-teal-400'
         };
+
+        // Subjects counted under another subject in hours calculation (書写 is part of 国語)
+        const HOURS_SUBJECT_ALIAS = { '書写': '国語' };
+
+        // Slots that hold a subject + hours (1〜6時間目 and その他1〜3)
+        const SUBJECT_SLOT_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'other1', 'other2', 'other3'];
 
         function getSubjectColorClass(subjectName) {
             return SUBJECT_COLORS[subjectName] || 'bg-slate-100 text-slate-800 border-slate-300';
@@ -1003,6 +1017,8 @@
         let selectedSpHours = 1;
 
         let activeDayNoteKey = null;
+
+        let archiveViewBackup = null;
 
         const ALL_DAYS = [
             { key: 'Mon', label: '月' },
@@ -1090,6 +1106,7 @@
         }
 
         function showHomeView() {
+            exitArchiveView();
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             updateHomeViewUI();
@@ -1215,7 +1232,7 @@
 
             headerRow.innerHTML = headerHtml;
 
-            // Period rows definition: 1-6 periods, 下校時間 (dismissal time), and その他 (others)
+            // Period rows definition: 1-6 periods, 下校時間 (dismissal time), and その他1〜3
             const periodRows = [
                 { id: 'p1', label: '1時間目', type: 'subject' },
                 { id: 'p2', label: '2時間目', type: 'subject' },
@@ -1224,7 +1241,9 @@
                 { id: 'p5', label: '5時間目', type: 'subject' },
                 { id: 'p6', label: '6時間目', type: 'subject' },
                 { id: 'dismissal', label: '下校時間', type: 'text' },
-                { id: 'other', label: 'その他', type: 'text' }
+                { id: 'other1', label: 'その他1', type: 'subject' },
+                { id: 'other2', label: 'その他2', type: 'subject' },
+                { id: 'other3', label: 'その他3', type: 'subject' }
             ];
 
             const totalRowsCount = periodRows.length;
@@ -1266,7 +1285,7 @@
                     tr.innerHTML = `<th class="p-2 text-center font-bold text-amber-950 bg-amber-100/80 border border-slate-800 text-xs sm:text-sm">
                         <i class="fa-regular fa-clock text-orange-600 mr-1"></i>${pRow.label}
                     </th>`;
-                } else if (pRow.id === 'other') {
+                } else if (pRow.id.startsWith('other')) {
                     tr.innerHTML = `<th class="p-2 text-center font-bold text-slate-700 bg-slate-200 border border-slate-800 text-xs sm:text-sm">
                         ${pRow.label}
                     </th>`;
@@ -1311,14 +1330,8 @@
                                 <input type="text" id="cell-dismissal-${day.key}" value="${escapeHtml(val)}" oninput="saveCurrentWeekData()" placeholder="15:00" class="w-full text-center font-bold text-slate-800 bg-amber-50/40 hover:bg-amber-100/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-lg p-1.5 text-xs sm:text-sm border border-amber-200 transition">
                             </div>
                         `;
-                    } else if (pRow.id === 'other') {
-                        // Other notes cell
-                        const val = typeof dayData.other === 'string' ? dayData.other : (dayData.other?.text || '');
-                        td.innerHTML = `
-                            <textarea id="cell-other-${day.key}" oninput="saveCurrentWeekData()" class="w-full p-1.5 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none bg-slate-50/30 focus:bg-white" rows="2" placeholder="連絡・行事など">${escapeHtml(val)}</textarea>
-                        `;
                     } else {
-                        // Standard Period 1-6 Subject Slots
+                        // Subject slots (1〜6時間目, その他1〜3)
                         const cellId = `${day.key}_${pRow.id}`;
                         if (isSp) {
                             // Special support multi-grade rendering
@@ -1359,6 +1372,12 @@
                                         <p class="text-xs text-slate-700 mt-1 line-clamp-2 leading-tight">${escapeHtml(cellObj.content || '')}</p>
                                     </div>
                                 `;
+                            } else if (cellObj.content) {
+                                td.innerHTML = `
+                                    <div onclick="openNormalSubjectModal('${cellId}')" class="cursor-pointer p-2 rounded-xl border bg-amber-50/80 border-amber-200 min-h-[64px] shadow-sm hover:scale-[1.01] transition-transform">
+                                        <p class="text-xs text-slate-700 line-clamp-3 leading-tight">${escapeHtml(cellObj.content)}</p>
+                                    </div>
+                                `;
                             } else {
                                 td.innerHTML = `
                                     <div onclick="openNormalSubjectModal('${cellId}')" class="cursor-pointer min-h-[64px] border-2 border-dashed border-slate-200 rounded-xl hover:bg-slate-100/80 flex items-center justify-center text-slate-400 hover:text-slate-600 transition">
@@ -1380,11 +1399,22 @@
             const key = getScheduleStorageKey();
             const raw = localStorage.getItem(key);
             if (!raw) return {};
+            let data;
             try {
-                return JSON.parse(raw);
+                data = JSON.parse(raw);
             } catch (e) {
                 return {};
             }
+            // Migrate legacy free-text その他 into その他1 so existing notes aren't lost
+            Object.values(data).forEach(dayData => {
+                if (dayData && typeof dayData.other === 'string') {
+                    if (dayData.other.trim() && !dayData.other1) {
+                        dayData.other1 = { subject: '', hours: 1, content: dayData.other };
+                    }
+                    delete dayData.other;
+                }
+            });
+            return data;
         }
 
         function saveCurrentWeekData() {
@@ -1397,11 +1427,6 @@
                 const dismissalInput = document.getElementById(`cell-dismissal-${day.key}`);
                 if (dismissalInput) {
                     existing[day.key].dismissal = dismissalInput.value;
-                }
-
-                const otherInput = document.getElementById(`cell-other-${day.key}`);
-                if (otherInput) {
-                    existing[day.key].other = otherInput.value;
                 }
             });
 
@@ -1798,7 +1823,7 @@
             const standardHoursPreset = DEFAULT_STANDARD_HOURS[targetGradeForPreset] || DEFAULT_STANDARD_HOURS['1年生'];
 
             // Relevant subjects to calculate
-            const activeSubjects = SUBJECTS.filter(s => s.name !== '');
+            const activeSubjects = SUBJECTS.filter(s => s.name !== '' && !HOURS_SUBJECT_ALIAS[s.name]);
 
             // Gather dates for the target month/year
             const baseYear = new Date(currentStartDate || '2026-04-01').getFullYear();
@@ -1862,21 +1887,12 @@
                 activeSubjects.forEach(s => dateSubjectHours[s.name] = 0);
                 let daySum = 0;
 
-                ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].forEach(pId => {
-                    if (isSp) {
-                        const cellData = daySchedule[pId] || {};
-                        const gData = cellData[activeSpSelectedGradeForHours];
-                        if (gData && gData.subject && gData.hours) {
-                            if (dateSubjectHours[gData.subject] !== undefined) {
-                                dateSubjectHours[gData.subject] += parseFloat(gData.hours);
-                            }
-                        }
-                    } else {
-                        const cellData = daySchedule[pId];
-                        if (cellData && cellData.subject && cellData.hours) {
-                            if (dateSubjectHours[cellData.subject] !== undefined) {
-                                dateSubjectHours[cellData.subject] += parseFloat(cellData.hours);
-                            }
+                SUBJECT_SLOT_IDS.forEach(pId => {
+                    const cellData = isSp ? (daySchedule[pId] || {})[activeSpSelectedGradeForHours] : daySchedule[pId];
+                    if (cellData && cellData.subject && cellData.hours) {
+                        const countedSubject = HOURS_SUBJECT_ALIAS[cellData.subject] || cellData.subject;
+                        if (dateSubjectHours[countedSubject] !== undefined) {
+                            dateSubjectHours[countedSubject] += parseFloat(cellData.hours);
                         }
                     }
                 });
@@ -1980,6 +1996,8 @@
                 activeSpGrades = selectedList.length > 0 ? selectedList : ['1年生', '2年生', '3年生', '4年生', '5年生', '6年生'];
             }
 
+            resetWeekTitle();
+            saveCurrentYearState();
             closeModal('add-year-modal');
             closeModal('sp-grades-modal');
             updateHomeViewUI();
@@ -2110,6 +2128,7 @@
             localStorage.setItem('edu_archived_years', JSON.stringify(archivedYearItems));
 
             hasCurrentYear = false;
+            saveCurrentYearState();
             closeModal('confirmArchiveModal');
             updateHomeViewUI();
             showToast("今年度データをアーカイブに保存しました");
@@ -2132,17 +2151,81 @@
             openModal('archive-detail-modal');
         }
 
+        // Opening an archive temporarily swaps in its settings; the current year is restored on returning home
         function loadArchivedSchedule(item) {
+            if (!archiveViewBackup) {
+                archiveViewBackup = {
+                    hasCurrentYear,
+                    currentYearName,
+                    currentGrade,
+                    currentStartDate,
+                    currentEndDate,
+                    activeSpGrades: [...activeSpGrades]
+                };
+            }
+
             currentYearName = item.yearName;
             currentGrade = item.grade;
             currentStartDate = item.startDate;
             currentEndDate = item.endDate;
-            if (item.spGrades) activeSpGrades = item.spGrades;
-            hasCurrentYear = true;
+            if (item.spGrades) activeSpGrades = [...item.spGrades];
+            currentMonday = getMonday(new Date(item.startDate));
+            resetWeekTitle();
+
+            const banner = document.getElementById('archiveViewBanner');
+            const bannerText = document.getElementById('archiveViewBannerText');
+            if (bannerText) bannerText.textContent = `アーカイブ閲覧中: ${item.yearName}（${item.grade}）`;
+            if (banner) banner.classList.remove('hidden');
 
             closeModal('archive-detail-modal');
             showDetailView();
             showToast(`${item.yearName}（${item.grade}）の週案を開きました`);
+        }
+
+        function exitArchiveView() {
+            if (!archiveViewBackup) return;
+            hasCurrentYear = archiveViewBackup.hasCurrentYear;
+            currentYearName = archiveViewBackup.currentYearName;
+            currentGrade = archiveViewBackup.currentGrade;
+            currentStartDate = archiveViewBackup.currentStartDate;
+            currentEndDate = archiveViewBackup.currentEndDate;
+            activeSpGrades = archiveViewBackup.activeSpGrades;
+            archiveViewBackup = null;
+            resetWeekTitle();
+
+            const banner = document.getElementById('archiveViewBanner');
+            if (banner) banner.classList.add('hidden');
+        }
+
+        // The week title feeds checkIsSpecialSupportMode(), so clear it when the grade context changes
+        function resetWeekTitle() {
+            const weekTitleInput = document.getElementById('weekTitle');
+            if (weekTitleInput) weekTitleInput.value = '';
+        }
+
+        function saveCurrentYearState() {
+            localStorage.setItem('edu_current_year', JSON.stringify({
+                hasCurrentYear,
+                yearName: currentYearName,
+                grade: currentGrade,
+                startDate: currentStartDate,
+                endDate: currentEndDate,
+                spGrades: activeSpGrades
+            }));
+        }
+
+        function loadCurrentYearState() {
+            const raw = localStorage.getItem('edu_current_year');
+            if (!raw) return;
+            try {
+                const state = JSON.parse(raw);
+                hasCurrentYear = state.hasCurrentYear;
+                currentYearName = state.yearName;
+                currentGrade = state.grade;
+                currentStartDate = state.startDate;
+                currentEndDate = state.endDate;
+                if (Array.isArray(state.spGrades)) activeSpGrades = state.spGrades;
+            } catch (e) {}
         }
 
         function requestDeleteArchive(id) {
@@ -2172,6 +2255,7 @@
                 }
             }
 
+            loadCurrentYearState();
             updateHomeViewUI();
         };
     </script>
