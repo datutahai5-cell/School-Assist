@@ -1667,6 +1667,73 @@
             showToast("特支教科情報を保存しました");
         }
 
+                let activeTplGradeTab = null;
+
+        function tplInputId(prefix, dayKey, pId) {
+            return 'tpl_' + (prefix ? prefix + '_' : '') + dayKey + '_' + pId;
+        }
+
+        function buildDayCardsHtml(idPrefix, tplForPrefix, withDismissal) {
+            let html = '';
+            ALL_DAYS.slice(0, 5).forEach(day => {
+                const dayData = (tplForPrefix && tplForPrefix[day.key]) || {};
+                html += `
+                    <div class="bg-slate-50 border-2 border-slate-300 rounded-2xl p-3 sm:p-4 space-y-2">
+                        <div class="font-bold text-slate-800 text-sm flex items-center gap-2 border-b pb-2">
+                            <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">${day.label}</span>
+                            <span>${day.label}曜日の固定時間割</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
+                `;
+                ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].forEach((pId, pIdx) => {
+                    const selectedSub = dayData[pId] || '';
+                    html += `
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">${pIdx + 1}時間目</label>
+                            <select id="${tplInputId(idPrefix, day.key, pId)}" class="w-full border-2 border-slate-300 rounded-xl p-1.5 text-xs font-bold focus:border-emerald-500 focus:outline-none bg-white">
+                    `;
+                    SUBJECTS.forEach(sub => {
+                        html += `<option value="${sub.name}" ${sub.name === selectedSub ? 'selected' : ''}>${sub.name || 'なし'}</option>`;
+                    });
+                    html += `
+                            </select>
+                        </div>
+                    `;
+                });
+                html += `
+                        </div>
+                `;
+                if (withDismissal) {
+                    html += `
+                        <div class="pt-2 border-t border-slate-200 mt-2 flex items-center gap-2">
+                            <label class="text-xs font-bold text-amber-950 flex items-center gap-1 shrink-0">
+                                <i class="fa-regular fa-clock text-orange-600"></i> ${day.label}曜日の下校時間:
+                            </label>
+                            <input type="text" id="${tplInputId(idPrefix, day.key, 'dismissal')}" value="${escapeHtml(dayData.dismissal || '15:00')}" placeholder="例: 15:00" class="w-32 border-2 border-amber-300 rounded-xl px-2.5 py-1 text-xs font-bold focus:border-emerald-500 focus:outline-none bg-white">
+                        </div>
+                    `;
+                }
+                html += `
+                    </div>
+                `;
+            });
+            return html;
+        }
+
+        function switchTplGradeTab(grade) {
+            activeTplGradeTab = grade;
+            activeSpGrades.forEach(g => {
+                const sec = document.getElementById('tplSection_' + g);
+                if (sec) sec.style.display = (g === grade) ? '' : 'none';
+                const tab = document.getElementById('tplTab_' + g);
+                if (tab) {
+                    tab.className = (g === grade)
+                        ? 'px-4 py-2 rounded-xl font-bold text-xs bg-emerald-600 text-white shadow'
+                        : 'px-4 py-2 rounded-xl font-bold text-xs bg-slate-100 text-slate-700 border-2 border-slate-300';
+                }
+            });
+        }
+
         function openTimetableSettingsModal() {
             const container = document.getElementById('timetableBuilderContainer');
             if (!container) return;
@@ -1682,60 +1749,80 @@
             const savedTpl = rawSaved ? JSON.parse(rawSaved) : {};
 
             let html = '';
-            ALL_DAYS.slice(0, 5).forEach(day => {
-                const dayData = savedTpl[day.key] || {};
-                html += `
-                    <div class="bg-slate-50 border-2 border-slate-300 rounded-2xl p-3 sm:p-4 space-y-2">
-                        <div class="font-bold text-slate-800 text-sm flex items-center gap-2 border-b pb-2">
-                            <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold">${day.label}</span>
-                            <span>${day.label}曜日の固定時間割</span>
-                        </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
-                `;
-
-                ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].forEach((pId, pIdx) => {
-                    const selectedSub = dayData[pId] || '';
+            if (isSp) {
+                const perGrade = (savedTpl && savedTpl.__spPerGrade && savedTpl.grades) ? savedTpl.grades : {};
+                const legacy = (savedTpl && !savedTpl.__spPerGrade) ? savedTpl : {};
+                html += `<div class="flex flex-wrap gap-2">`;
+                activeSpGrades.forEach(g => {
+                    html += `<button id="tplTab_${g}" onclick="switchTplGradeTab('${g}')">${g}</button>`;
+                });
+                html += `</div>`;
+                html += `<p class="text-[11px] font-bold text-slate-500">学年ごとに時間割を設定できます。タブで学年を切り替えて、それぞれの教科を選んでください。</p>`;
+                activeSpGrades.forEach(g => {
+                    const gradeTpl = perGrade[g] || legacy;
+                    html += `<div id="tplSection_${g}" class="space-y-4">`;
+                    html += `<div class="font-bold text-slate-800 text-base">【${g}】の時間割</div>`;
+                    html += buildDayCardsHtml(g, gradeTpl, false);
+                    html += `</div>`;
+                });
+                html += `<div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 sm:p-4 space-y-2">`;
+                html += `<div class="font-bold text-slate-800 text-sm">下校時間（全学年共通）</div>`;
+                const disSrc = (savedTpl && savedTpl.dismissal) ? savedTpl.dismissal : legacy;
+                ALL_DAYS.slice(0, 5).forEach(day => {
+                    let dv = '15:00';
+                    if (disSrc && disSrc[day.key]) {
+                        dv = (typeof disSrc[day.key] === 'string') ? disSrc[day.key] : (disSrc[day.key].dismissal || '15:00');
+                    }
                     html += `
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-600 mb-1">${pIdx + 1}時間目</label>
-                            <select id="tpl_${day.key}_${pId}" class="w-full border-2 border-slate-300 rounded-xl p-1.5 text-xs font-bold focus:border-emerald-500 focus:outline-none bg-white">
-                    `;
-                    SUBJECTS.forEach(sub => {
-                        html += `<option value="${sub.name}" ${sub.name === selectedSub ? 'selected' : ''}>${sub.name || 'なし'}</option>`;
-                    });
-                    html += `
-                            </select>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-bold text-amber-950 flex items-center gap-1 shrink-0 w-28">
+                                <i class="fa-regular fa-clock text-orange-600"></i> ${day.label}曜日の下校時間:
+                            </label>
+                            <input type="text" id="tpl_dismissal_${day.key}" value="${escapeHtml(dv)}" placeholder="例: 15:00" class="w-32 border-2 border-amber-300 rounded-xl px-2.5 py-1 text-xs font-bold focus:border-emerald-500 focus:outline-none bg-white">
                         </div>
                     `;
                 });
-
-                html += `
-                        </div>
-                        <div class="pt-2 border-t border-slate-200 mt-2 flex items-center gap-2">
-                            <label class="text-xs font-bold text-amber-950 flex items-center gap-1 shrink-0">
-                                <i class="fa-regular fa-clock text-orange-600"></i> ${day.label}曜日の下校時間:
-                            </label>
-                            <input type="text" id="tpl_${day.key}_dismissal" value="${escapeHtml(dayData.dismissal || '15:00')}" placeholder="例: 15:00" class="w-32 border-2 border-amber-300 rounded-xl px-2.5 py-1 text-xs font-bold focus:border-emerald-500 focus:outline-none bg-white">
-                        </div>
-                    </div>
-                `;
-            });
+                html += `</div>`;
+            } else {
+                html += buildDayCardsHtml('', savedTpl, true);
+            }
 
             container.innerHTML = html;
+            if (isSp) switchTplGradeTab(activeTplGradeTab && activeSpGrades.includes(activeTplGradeTab) ? activeTplGradeTab : activeSpGrades[0]);
             openModal('timetable-settings-modal');
         }
 
         function saveTimetableTemplate() {
-            const tplObj = {};
-            ALL_DAYS.slice(0, 5).forEach(day => {
-                tplObj[day.key] = {};
-                ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].forEach(pId => {
-                    const sel = document.getElementById(`tpl_${day.key}_${pId}`);
-                    if (sel) tplObj[day.key][pId] = sel.value;
+            const isSp = checkIsSpecialSupportMode();
+            let tplObj;
+            if (isSp) {
+                tplObj = { __spPerGrade: true, grades: {}, dismissal: {} };
+                activeSpGrades.forEach(g => {
+                    tplObj.grades[g] = {};
+                    ALL_DAYS.slice(0, 5).forEach(day => {
+                        tplObj.grades[g][day.key] = {};
+                        ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].forEach(pId => {
+                            const sel = document.getElementById(tplInputId(g, day.key, pId));
+                            if (sel) tplObj.grades[g][day.key][pId] = sel.value;
+                        });
+                    });
                 });
-                const disInput = document.getElementById(`tpl_${day.key}_dismissal`);
-                if (disInput) tplObj[day.key].dismissal = disInput.value;
-            });
+                ALL_DAYS.slice(0, 5).forEach(day => {
+                    const disInput = document.getElementById(`tpl_dismissal_${day.key}`);
+                    if (disInput) tplObj.dismissal[day.key] = disInput.value;
+                });
+            } else {
+                tplObj = {};
+                ALL_DAYS.slice(0, 5).forEach(day => {
+                    tplObj[day.key] = {};
+                    ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].forEach(pId => {
+                        const sel = document.getElementById(tplInputId('', day.key, pId));
+                        if (sel) tplObj[day.key][pId] = sel.value;
+                    });
+                    const disInput = document.getElementById(tplInputId('', day.key, 'dismissal'));
+                    if (disInput) tplObj[day.key].dismissal = disInput.value;
+                });
+            }
 
             localStorage.setItem(getTimetableStorageKey(), JSON.stringify(tplObj));
             closeModal('timetable-settings-modal');
@@ -1757,6 +1844,7 @@
             const tpl = JSON.parse(rawSaved);
             const currentData = loadCurrentWeekData();
             const isSp = checkIsSpecialSupportMode();
+            const perGrade = isSp && tpl.__spPerGrade && tpl.grades;
 
             ALL_DAYS.slice(0, 5).forEach((day, idx) => {
                 const d = new Date(currentMonday);
@@ -1769,18 +1857,22 @@
                 const dayTpl = tpl[day.key] || {};
 
                 ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'].forEach(pId => {
-                    const subName = dayTpl[pId] || '';
                     if (isSp) {
                         if (!currentData[day.key][pId]) currentData[day.key][pId] = {};
                         activeSpGrades.forEach(g => {
+                            const gTpl = perGrade ? (tpl.grades[g] || {}) : tpl;
+                            const subName = ((gTpl[day.key] || {})[pId]) || '';
                             currentData[day.key][pId][g] = { subject: subName, hours: subName ? 1 : 0, content: '' };
                         });
                     } else {
+                        const subName = dayTpl[pId] || '';
                         currentData[day.key][pId] = { subject: subName, hours: subName ? 1 : 0, content: '' };
                     }
                 });
 
-                if (dayTpl.dismissal) {
+                if (isSp && tpl.dismissal && tpl.dismissal[day.key]) {
+                    currentData[day.key].dismissal = tpl.dismissal[day.key];
+                } else if (dayTpl.dismissal) {
                     currentData[day.key].dismissal = dayTpl.dismissal;
                 }
             });
