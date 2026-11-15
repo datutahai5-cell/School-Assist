@@ -2321,5 +2321,166 @@
             updateHomeViewUI();
         };
     </script>
+<script>
+// ===== School Assist クラウド同期 (Googleスプレッドシート + Apps Script) =====
+// データは localStorage をキャッシュとして使い、クラウド(スプレッドシート)と同期します。
+(function () {
+    const CFG_KEY = 'sa_cloud_config';
+    const origSet = Storage.prototype.setItem;
+    const origRemove = Storage.prototype.removeItem;
+    let applying = false;
+    let pushTimer = null;
+    let statusEl = null;
+    let lastStatus = '';
+
+    function getCfg() {
+        try { return JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); } catch (e) { return null; }
+    }
+    function setStatus(txt) {
+        lastStatus = txt;
+        if (statusEl) statusEl.textContent = txt;
+    }
+    function snapshot() {
+        const data = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.indexOf('edu_') === 0) data[k] = localStorage.getItem(k);
+        }
+        return data;
+    }
+    function applyData(data) {
+        applying = true;
+        const keep = {};
+        Object.keys(data).forEach(k => { keep[k] = true; });
+        const toRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (k && k.indexOf('edu_') === 0 && !keep[k]) toRemove.push(k);
+        }
+        toRemove.forEach(k => origRemove.call(localStorage, k));
+        Object.keys(data).forEach(k => origSet.call(localStorage, k, data[k]));
+        applying = false;
+    }
+    function nowTime() {
+        const d = new Date();
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+    async function pull() {
+        const cfg = getCfg();
+        if (!cfg || !cfg.url) { setStatus('☁ 未接続'); return 'nocfg'; }
+        setStatus('☁ 同期中…');
+        try {
+            const res = await fetch(cfg.url + '?token=' + encodeURIComponent(cfg.token || ''), { method: 'GET' });
+            const json = await res.json();
+            if (!json.ok) { setStatus('☁ エラー（合言葉を確認）'); return 'error'; }
+            const cloud = json.data || {};
+            const local = snapshot();
+            if (Object.keys(cloud).length === 0) {
+                if (Object.keys(local).length > 0) { await push(); return 'pushed'; }
+                setStatus('☁ 同期済み ' + nowTime());
+                return 'empty';
+            }
+            if (JSON.stringify(cloud) !== JSON.stringify(local)) {
+                applyData(cloud);
+                setStatus('☁ 同期済み ' + nowTime());
+                return 'applied';
+            }
+            setStatus('☁ 同期済み ' + nowTime());
+            return 'same';
+        } catch (e) {
+            setStatus('☁ オフライン（端末内に保存中）');
+            return 'offline';
+        }
+    }
+    async function push() {
+        const cfg = getCfg();
+        if (!cfg || !cfg.url) return;
+        setStatus('☁ 保存中…');
+        try {
+            const res = await fetch(cfg.url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ token: cfg.token || '', data: snapshot() })
+            });
+            const json = await res.json();
+            if (json.ok) setStatus('☁ 同期済み ' + nowTime());
+            else setStatus('☁ エラー（合言葉を確認）');
+        } catch (e) {
+            setStatus('☁ オフライン（端末内に保存中）');
+        }
+    }
+    function schedulePush() {
+        if (applying) return;
+        if (!getCfg()) return;
+        if (pushTimer) clearTimeout(pushTimer);
+        pushTimer = setTimeout(push, 2000);
+    }
+    Storage.prototype.setItem = function (k, v) {
+        origSet.call(this, k, v);
+        if (this === localStorage && typeof k === 'string' && k.indexOf('edu_') === 0) schedulePush();
+    };
+    Storage.prototype.removeItem = function (k) {
+        origRemove.call(this, k);
+        if (this === localStorage && typeof k === 'string' && k.indexOf('edu_') === 0) schedulePush();
+    };
+
+    function buildPanel() {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:9999;font-family:sans-serif;';
+        const bar = document.createElement('div');
+        bar.style.cssText = 'background:#065f46;color:#fff;border-radius:9999px;padding:8px 14px;font-size:12px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:6px;';
+        statusEl = document.createElement('span');
+        statusEl.textContent = '☁ 確認中…';
+        bar.appendChild(statusEl);
+        const form = document.createElement('div');
+        form.style.cssText = 'display:none;margin-top:8px;background:#fff;border:2px solid #065f46;border-radius:16px;padding:12px;width:300px;box-shadow:0 8px 24px rgba(0,0,0,.25);';
+        form.innerHTML =
+            '<div style="font-weight:800;font-size:13px;color:#065f46;margin-bottom:6px;">クラウド同期の設定</div>' +
+            '<label style="font-size:11px;color:#334155;">WebアプリのURL</label>' +
+            '<input id="saCloudUrl" type="text" placeholder="https://script.google.com/macros/s/..." style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:6px;font-size:11px;margin:2px 0 8px;">' +
+            '<label style="font-size:11px;color:#334155;">合言葉</label>' +
+            '<input id="saCloudToken" type="text" placeholder="Apps Scriptと同じ合言葉" style="width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:6px;font-size:11px;margin:2px 0 10px;">' +
+            '<button id="saCloudSave" style="background:#059669;color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;width:100%;cursor:pointer;">保存して接続</button>' +
+            '<button id="saCloudSync" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:700;width:100%;cursor:pointer;margin-top:6px;">今すぐ同期（クラウド優先）</button>' +
+            '<p style="font-size:10px;color:#64748b;margin-top:8px;line-height:1.5;">データはGoogleスプレッドシート「School Assist データ」に保存されます。変更は自動で保存されます。</p>';
+        bar.addEventListener('click', () => {
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+            const cfg = getCfg();
+            if (cfg) {
+                document.getElementById('saCloudUrl').value = cfg.url || '';
+                document.getElementById('saCloudToken').value = cfg.token || '';
+            }
+        });
+        form.addEventListener('click', e => e.stopPropagation());
+        wrap.appendChild(form);
+        wrap.appendChild(bar);
+        document.body.appendChild(wrap);
+        document.getElementById('saCloudSave').addEventListener('click', async () => {
+            const url = document.getElementById('saCloudUrl').value.trim();
+            const token = document.getElementById('saCloudToken').value.trim();
+            origSet.call(localStorage, CFG_KEY, JSON.stringify({ url, token }));
+            const r = await pull();
+            if (r === 'applied') location.reload();
+            else if (r !== 'error' && r !== 'nocfg') { form.style.display = 'none'; }
+        });
+        document.getElementById('saCloudSync').addEventListener('click', async () => {
+            const r = await pull();
+            if (r === 'applied') location.reload();
+        });
+    }
+
+    window.addEventListener('load', async () => {
+        buildPanel();
+        const cfg = getCfg();
+        if (!cfg || !cfg.url) { setStatus('☁ 未接続（タップで設定）'); return; }
+        const r = await pull();
+        if (r === 'applied' && !sessionStorage.getItem('sa_cloud_applied')) {
+            sessionStorage.setItem('sa_cloud_applied', '1');
+            location.reload();
+        }
+    });
+})();
+</script>
+
 </body>
 </html>
