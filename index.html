@@ -102,6 +102,43 @@
                 width: 100%;
                 background: white;
             }
+            /* 週案印刷: スクロール枠で切らず、A4横1ページに下校時間・その他まで収める */
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .print-container {
+                overflow: visible !important;
+                height: auto !important;
+            }
+            #scheduleTable {
+                font-size: 9.5px;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            #scheduleTable th, #scheduleTable td {
+                padding: 2px !important;
+            }
+            #scheduleTable td > div {
+                padding: 2px !important;
+            }
+            .min-h-\[64px\] {
+                min-height: 36px !important;
+            }
+            .min-h-\[68px\] {
+                min-height: 0 !important;
+            }
+            .space-y-1 > div {
+                padding-top: 1px !important;
+                padding-bottom: 1px !important;
+                margin-top: 2px !important;
+            }
+            #scheduleTable textarea {
+                height: auto !important;
+            }
+            #scheduleTable tr {
+                page-break-inside: avoid;
+            }
         }
         ::-webkit-scrollbar {
             width: 6px;
