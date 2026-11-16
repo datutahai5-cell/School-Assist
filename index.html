@@ -1472,7 +1472,7 @@
                                     const endIdx = gData.rangeEnd ? SUBJECT_SLOT_IDS.indexOf(gData.rangeEnd) : thisIdx;
                                     if (startIdx < thisIdx && thisIdx <= endIdx) {
                                         innerHtml += `
-                                            <div onclick="openSpSubjectModal('${cellId}', '${g}')" class="cursor-pointer text-[10px] p-1 rounded-lg border border-dashed bg-violet-50 text-violet-700 border-violet-300 flex items-center justify-between hover:brightness-95 transition">
+                                            <div onclick="openSpSubjectModal('${cellId}', '${g}')" class="cursor-pointer text-[10px] p-1 rounded-lg border border-dashed bg-violet-100 text-violet-800 border-violet-300 flex items-center justify-between hover:brightness-95 transition">
                                                 <span class="font-bold shrink-0"><i class="fa-solid fa-star text-violet-400 mr-0.5"></i>[${g}] ${escapeHtml(gData.specialText)}（続き）</span>
                                             </div>
                                         `;
@@ -1507,6 +1507,7 @@
                             // Normal class single-grade rendering
                             const cellObj = dayData[pRow.id] || { subject: '', hours: 1, content: '' };
                             if (cellObj.special && cellObj.specialText) {
+                                td.style.backgroundColor = '#ede9fe';
                                 const spRangeLabel = (cellObj.rangeStart && cellObj.rangeEnd && cellObj.rangeEnd !== cellObj.rangeStart) ? `<div class="text-[10px] font-bold text-violet-600 mt-0.5">${specialShortLabel(cellObj.rangeStart)}〜${specialShortLabel(cellObj.rangeEnd)}</div>` : '';
                                 td.innerHTML = `
                                     <div onclick="openNormalSubjectModal('${cellId}')" class="cursor-pointer p-2 rounded-xl border bg-violet-100 border-violet-400 text-violet-950 min-h-[64px] ${spSpan > 1 ? 'h-full' : ''} flex flex-col ${spSpan > 1 ? 'justify-center' : 'justify-between'} shadow-sm hover:scale-[1.01] transition-transform">
