@@ -57,7 +57,7 @@
         }
         @media print {
             @page {
-                size: A4 landscape;
+                size: A4 portrait;
                 margin: 5mm;
             }
             body {
@@ -142,6 +142,9 @@
             #weekTitle {
                 font-size: 22px !important;
                 font-weight: bold !important;
+            }
+            .no-print-row {
+                display: none !important;
             }
         }
         ::-webkit-scrollbar {
@@ -1381,6 +1384,7 @@
             periodRows.forEach((pRow, rIdx) => {
                 const tr = document.createElement('tr');
                 tr.className = "divide-x divide-slate-800 border-b border-slate-800";
+                if (pRow.id.startsWith('other')) tr.classList.add('no-print-row');
 
                 // Row Header Cell
                 if (pRow.id === 'dismissal') {
