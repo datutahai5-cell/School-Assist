@@ -123,7 +123,7 @@
                 padding: 2px !important;
             }
             .min-h-\[64px\] {
-                min-height: 36px !important;
+                min-height: 30px !important;
             }
             .min-h-\[68px\] {
                 min-height: 0 !important;
@@ -1021,7 +1021,7 @@
         const HOURS_SUBJECT_ALIAS = { '書写': '国語' };
 
         // Slots that hold a subject + hours (1〜6時間目 and その他1〜3)
-        const SUBJECT_SLOT_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'other1', 'other2', 'other3'];
+        const SUBJECT_SLOT_IDS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'other1', 'other2', 'other3', 'other4', 'other5'];
 
         function getSubjectColorClass(subjectName) {
             return SUBJECT_COLORS[subjectName] || 'bg-slate-100 text-slate-800 border-slate-300';
@@ -1308,7 +1308,9 @@
                 { id: 'dismissal', label: '下校時間', type: 'text' },
                 { id: 'other1', label: 'その他1', type: 'subject' },
                 { id: 'other2', label: 'その他2', type: 'subject' },
-                { id: 'other3', label: 'その他3', type: 'subject' }
+                { id: 'other3', label: 'その他3', type: 'subject' },
+                { id: 'other4', label: 'その他4', type: 'subject' },
+                { id: 'other5', label: 'その他5', type: 'subject' }
             ];
 
             const totalRowsCount = periodRows.length;
