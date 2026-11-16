@@ -725,7 +725,14 @@
                         <i class="fa-solid fa-star text-violet-500"></i> 特別の予定
                     </label>
                     <input type="text" id="normalSpecialInput" disabled placeholder="例: 校外学習、学習発表会" class="w-full p-2.5 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-xs sm:text-sm bg-white disabled:bg-slate-100 disabled:text-slate-400">
-                    <p class="text-[11px] text-violet-800">校外学習や学習発表会など、教科でない予定はこちらに入力してください。特別の予定の時数は、時数集計にカウントされません。</p>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-bold text-violet-950">範囲:</span>
+                        <select id="normalSpecialFrom" disabled class="p-1.5 border-2 border-slate-300 rounded-lg bg-white text-xs font-bold disabled:bg-slate-100 disabled:text-slate-400"><option value="p1">1時間目</option><option value="p2">2時間目</option><option value="p3">3時間目</option><option value="p4">4時間目</option><option value="p5">5時間目</option><option value="p6">6時間目</option><option value="other1">その他1</option><option value="other2">その他2</option><option value="other3">その他3</option><option value="other4">その他4</option><option value="other5">その他5</option></select>
+                        <span class="text-violet-900">から</span>
+                        <select id="normalSpecialTo" disabled class="p-1.5 border-2 border-slate-300 rounded-lg bg-white text-xs font-bold disabled:bg-slate-100 disabled:text-slate-400"><option value="p1">1時間目</option><option value="p2">2時間目</option><option value="p3">3時間目</option><option value="p4">4時間目</option><option value="p5">5時間目</option><option value="p6">6時間目</option><option value="other1">その他1</option><option value="other2">その他2</option><option value="other3">その他3</option><option value="other4">その他4</option><option value="other5">その他5</option></select>
+                        <span class="text-violet-900">まで</span>
+                    </div>
+                    <p class="text-[11px] text-violet-800">校外学習や学習発表会など、教科でない予定はこちらに入力してください。範囲を指定すると、その間が1つの予定としてつながります。特別の予定の時数は、時数集計にカウントされません。</p>
                 </div>
 
                 <div>
@@ -775,7 +782,14 @@
                         <i class="fa-solid fa-star text-violet-500"></i> 特別の予定
                     </label>
                     <input type="text" id="spSpecialInput" disabled placeholder="例: 校外学習、学習発表会" class="w-full p-2.5 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-xs sm:text-sm bg-white disabled:bg-slate-100 disabled:text-slate-400">
-                    <p class="text-[11px] text-violet-800">校外学習や学習発表会など、教科でない予定はこちらに入力してください。特別の予定の時数は、時数集計にカウントされません。</p>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-bold text-violet-950">範囲:</span>
+                        <select id="spSpecialFrom" disabled class="p-1.5 border-2 border-slate-300 rounded-lg bg-white text-xs font-bold disabled:bg-slate-100 disabled:text-slate-400"><option value="p1">1時間目</option><option value="p2">2時間目</option><option value="p3">3時間目</option><option value="p4">4時間目</option><option value="p5">5時間目</option><option value="p6">6時間目</option><option value="other1">その他1</option><option value="other2">その他2</option><option value="other3">その他3</option><option value="other4">その他4</option><option value="other5">その他5</option></select>
+                        <span class="text-violet-900">から</span>
+                        <select id="spSpecialTo" disabled class="p-1.5 border-2 border-slate-300 rounded-lg bg-white text-xs font-bold disabled:bg-slate-100 disabled:text-slate-400"><option value="p1">1時間目</option><option value="p2">2時間目</option><option value="p3">3時間目</option><option value="p4">4時間目</option><option value="p5">5時間目</option><option value="p6">6時間目</option><option value="other1">その他1</option><option value="other2">その他2</option><option value="other3">その他3</option><option value="other4">その他4</option><option value="other5">その他5</option></select>
+                        <span class="text-violet-900">まで</span>
+                    </div>
+                    <p class="text-[11px] text-violet-800">校外学習や学習発表会など、教科でない予定はこちらに入力してください。範囲を指定すると、その間が1つの予定としてつながります。特別の予定の時数は、時数集計にカウントされません。</p>
                 </div>
 
                 <div>
@@ -1314,6 +1328,27 @@
             ];
 
             const totalRowsCount = periodRows.length;
+
+            // 特別の予定の範囲 (通常級のセル結合用): 日ごとに anchor の rowSpan と結合される行を計算
+            const daySpecialMap = {};
+            daysToShow.forEach(day => {
+                const dayData = savedData[day.key] || {};
+                const covered = new Set();
+                const spans = {};
+                SUBJECT_SLOT_IDS.forEach(slotId => {
+                    const c = dayData[slotId];
+                    if (c && c.special && c.rangeStart === slotId && c.rangeEnd && c.rangeEnd !== slotId) {
+                        const rs = periodRows.findIndex(r => r.id === c.rangeStart);
+                        const re = periodRows.findIndex(r => r.id === c.rangeEnd);
+                        if (rs >= 0 && re > rs) {
+                            spans[slotId] = re - rs + 1;
+                            for (let i = rs + 1; i <= re; i++) covered.add(periodRows[i].id);
+                        }
+                    }
+                });
+                daySpecialMap[day.key] = { covered, spans };
+            });
+
             const tbody = table.querySelector('tbody');
             tbody.innerHTML = '';
 
@@ -1370,6 +1405,11 @@
                 daysToShow.forEach((day, dayIdx) => {
                     const holidayName = dayHolidayMap[dayIdx];
 
+                    // 特別の予定の範囲に含まれる行は、結合先のセルに任せて描かない
+                    if (!holidayName && daySpecialMap[day.key] && daySpecialMap[day.key].covered.has(pRow.id)) {
+                        return;
+                    }
+
                     if (holidayName) {
                         // On holidays: merge 1時間目 through その他 into a single blocked vertical cell
                         if (rIdx === 0) {
@@ -1393,6 +1433,12 @@
                     td.className = "p-1.5 align-top border border-slate-800 bg-white hover:bg-slate-50/80 transition-colors";
 
                     const dayData = savedData[day.key] || {};
+
+                    const spSpan = (daySpecialMap[day.key] && daySpecialMap[day.key].spans[pRow.id]) || 0;
+                    if (spSpan > 1) {
+                        td.rowSpan = spSpan;
+                        td.className = "p-1.5 align-middle border border-slate-800 bg-white hover:bg-slate-50/80 transition-colors";
+                    }
 
                     if (pRow.id === 'dismissal') {
                         // Dismissal time row cell (text input for times like 14:30, 15:00, etc.)
@@ -1421,12 +1467,24 @@
                             activeSpGrades.forEach(g => {
                                 const gData = cellObj[g] || { subject: '', hours: 1, content: '' };
                                 if (gData.special && gData.specialText) {
-                                    innerHtml += `
-                                        <div onclick="openSpSubjectModal('${cellId}', '${g}')" class="cursor-pointer text-[11px] p-1 rounded-lg border bg-violet-100 text-violet-950 border-violet-400 flex items-center justify-between shadow-sm hover:brightness-95 transition">
-                                            <span class="font-extrabold shrink-0"><i class="fa-solid fa-star text-violet-500 mr-0.5"></i>[${g}] ${escapeHtml(gData.specialText)}</span>
-                                            <span class="text-[9px] font-bold text-violet-600 ml-1 shrink-0">特別</span>
-                                        </div>
-                                    `;
+                                    const thisIdx = SUBJECT_SLOT_IDS.indexOf(pRow.id);
+                                    const startIdx = gData.rangeStart ? SUBJECT_SLOT_IDS.indexOf(gData.rangeStart) : thisIdx;
+                                    const endIdx = gData.rangeEnd ? SUBJECT_SLOT_IDS.indexOf(gData.rangeEnd) : thisIdx;
+                                    if (startIdx < thisIdx && thisIdx <= endIdx) {
+                                        innerHtml += `
+                                            <div onclick="openSpSubjectModal('${cellId}', '${g}')" class="cursor-pointer text-[10px] p-1 rounded-lg border border-dashed bg-violet-50 text-violet-700 border-violet-300 flex items-center justify-between hover:brightness-95 transition">
+                                                <span class="font-bold shrink-0"><i class="fa-solid fa-star text-violet-400 mr-0.5"></i>[${g}] ${escapeHtml(gData.specialText)}（続き）</span>
+                                            </div>
+                                        `;
+                                    } else {
+                                        const rangeLabel = (gData.rangeStart && gData.rangeEnd && gData.rangeEnd !== gData.rangeStart) ? `（${specialShortLabel(gData.rangeStart)}〜${specialShortLabel(gData.rangeEnd)}）` : '';
+                                        innerHtml += `
+                                            <div onclick="openSpSubjectModal('${cellId}', '${g}')" class="cursor-pointer text-[11px] p-1 rounded-lg border bg-violet-100 text-violet-950 border-violet-400 flex items-center justify-between shadow-sm hover:brightness-95 transition">
+                                                <span class="font-extrabold shrink-0"><i class="fa-solid fa-star text-violet-500 mr-0.5"></i>[${g}] ${escapeHtml(gData.specialText)}${rangeLabel}</span>
+                                                <span class="text-[9px] font-bold text-violet-600 ml-1 shrink-0">特別</span>
+                                            </div>
+                                        `;
+                                    }
                                 } else if (gData.subject) {
                                     const colorClass = getSubjectColorClass(gData.subject);
                                     innerHtml += `
@@ -1449,12 +1507,14 @@
                             // Normal class single-grade rendering
                             const cellObj = dayData[pRow.id] || { subject: '', hours: 1, content: '' };
                             if (cellObj.special && cellObj.specialText) {
+                                const spRangeLabel = (cellObj.rangeStart && cellObj.rangeEnd && cellObj.rangeEnd !== cellObj.rangeStart) ? `<div class="text-[10px] font-bold text-violet-600 mt-0.5">${specialShortLabel(cellObj.rangeStart)}〜${specialShortLabel(cellObj.rangeEnd)}</div>` : '';
                                 td.innerHTML = `
-                                    <div onclick="openNormalSubjectModal('${cellId}')" class="cursor-pointer p-2 rounded-xl border bg-violet-100 border-violet-400 text-violet-950 min-h-[64px] flex flex-col justify-between shadow-sm hover:scale-[1.01] transition-transform">
+                                    <div onclick="openNormalSubjectModal('${cellId}')" class="cursor-pointer p-2 rounded-xl border bg-violet-100 border-violet-400 text-violet-950 min-h-[64px] ${spSpan > 1 ? 'h-full' : ''} flex flex-col ${spSpan > 1 ? 'justify-center' : 'justify-between'} shadow-sm hover:scale-[1.01] transition-transform">
                                         <div class="flex justify-between items-center font-bold">
                                             <span class="text-sm sm:text-base"><i class="fa-solid fa-star text-violet-500 mr-1"></i>${escapeHtml(cellObj.specialText)}</span>
                                             <span class="text-[10px] bg-white/80 px-1.5 py-0.5 rounded-md border border-violet-300 font-extrabold text-violet-700">特別</span>
                                         </div>
+                                        ${spRangeLabel}
                                         <p class="text-xs text-violet-900/80 mt-1 line-clamp-2 leading-tight">${escapeHtml(cellObj.content || '')}</p>
                                     </div>
                                 `;
@@ -1549,10 +1609,7 @@
             const contentInput = document.getElementById('normalContentInput');
             if (contentInput) contentInput.value = cellObj.content || '';
 
-            const spCheck = document.getElementById('normalSpecialCheck');
-            const spInput = document.getElementById('normalSpecialInput');
-            if (spCheck) spCheck.checked = !!cellObj.special;
-            if (spInput) { spInput.value = cellObj.specialText || ''; spInput.disabled = !cellObj.special; }
+            setSpecialControls('normal', cellObj, pId);
 
             renderNormalSubjectGrid();
             selectNormalHours(selectedNormalHours);
@@ -1596,11 +1653,65 @@
             });
         }
 
+        // 特別の予定: 範囲指定の共通ヘルパー
+        function specialShortLabel(id) {
+            if (!id) return '';
+            if (id.startsWith('other')) return 'その他' + id.slice(5);
+            return id.slice(1) + '限';
+        }
+
+        // cellsBySlot (slotId -> セル) の中から、範囲[sIdx, eIdx]と重なる特別の予定をすべて解除する
+        function clearOverlappingSpecialRanges(cellsBySlot, sIdx, eIdx) {
+            SUBJECT_SLOT_IDS.forEach(id => {
+                const c = cellsBySlot[id];
+                if (!c || !c.special) return;
+                let rs, re;
+                if (c.rangeStart) {
+                    rs = SUBJECT_SLOT_IDS.indexOf(c.rangeStart);
+                    re = SUBJECT_SLOT_IDS.indexOf(c.rangeEnd || c.rangeStart);
+                } else {
+                    rs = re = SUBJECT_SLOT_IDS.indexOf(id);
+                }
+                if (rs <= eIdx && sIdx <= re) {
+                    cellsBySlot[id] = { subject: '', hours: 1, content: '' };
+                }
+            });
+        }
+
+        // 範囲セレクトの値を読み、{startId, endId} を返す。1〜6限とその他をまたぐ場合は null
+        function readSpecialRange(fromEl, toEl) {
+            let a = fromEl ? fromEl.value : '';
+            let b = toEl ? toEl.value : '';
+            if (!a || !b) return null;
+            const blockA = a.startsWith('other') ? 'other' : 'period';
+            const blockB = b.startsWith('other') ? 'other' : 'period';
+            if (blockA !== blockB) return null;
+            if (SUBJECT_SLOT_IDS.indexOf(a) > SUBJECT_SLOT_IDS.indexOf(b)) { const t = a; a = b; b = t; }
+            return { startId: a, endId: b };
+        }
+
+        function setSpecialControls(prefix, cellObj, pId) {
+            const chk = document.getElementById(prefix + 'SpecialCheck');
+            const inp = document.getElementById(prefix + 'SpecialInput');
+            const from = document.getElementById(prefix + 'SpecialFrom');
+            const to = document.getElementById(prefix + 'SpecialTo');
+            const on = !!cellObj.special;
+            if (chk) chk.checked = on;
+            if (inp) { inp.value = cellObj.specialText || ''; inp.disabled = !on; }
+            if (from) { from.value = cellObj.rangeStart || pId; from.disabled = !on; }
+            if (to) { to.value = cellObj.rangeEnd || pId; to.disabled = !on; }
+        }
+
         function toggleNormalSpecial() {
             const chk = document.getElementById('normalSpecialCheck');
+            const on = !!(chk && chk.checked);
             const inp = document.getElementById('normalSpecialInput');
-            if (inp) inp.disabled = !(chk && chk.checked);
-            if (chk && chk.checked && inp) inp.focus();
+            if (inp) inp.disabled = !on;
+            ['normalSpecialFrom', 'normalSpecialTo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = !on;
+            });
+            if (on && inp) inp.focus();
         }
 
         function saveNormalCellDataFromModal() {
@@ -1618,13 +1729,38 @@
                 return;
             }
 
-            data[dayKey][pId] = {
-                subject: isSpecial ? '' : selectedNormalSubject,
-                hours: selectedNormalHours,
-                content: contentVal,
-                special: isSpecial,
-                specialText: isSpecial ? specialText : ''
-            };
+            if (isSpecial) {
+                const range = readSpecialRange(document.getElementById('normalSpecialFrom'), document.getElementById('normalSpecialTo'));
+                if (!range) {
+                    showToast('範囲は「1〜6時間目」または「その他1〜5」の中で指定してください');
+                    return;
+                }
+                const sIdx = SUBJECT_SLOT_IDS.indexOf(range.startId);
+                const eIdx = SUBJECT_SLOT_IDS.indexOf(range.endId);
+                clearOverlappingSpecialRanges(data[dayKey], sIdx, eIdx);
+                for (let i = sIdx; i <= eIdx; i++) {
+                    const slotId = SUBJECT_SLOT_IDS[i];
+                    data[dayKey][slotId] = {
+                        subject: '',
+                        hours: selectedNormalHours,
+                        content: slotId === range.startId ? contentVal : '',
+                        special: true,
+                        specialText: specialText,
+                        rangeStart: range.startId,
+                        rangeEnd: range.endId
+                    };
+                }
+            } else {
+                const idx = SUBJECT_SLOT_IDS.indexOf(pId);
+                clearOverlappingSpecialRanges(data[dayKey], idx, idx);
+                data[dayKey][pId] = {
+                    subject: selectedNormalSubject,
+                    hours: selectedNormalHours,
+                    content: contentVal,
+                    special: false,
+                    specialText: ''
+                };
+            }
 
             localStorage.setItem(getScheduleStorageKey(), JSON.stringify(data));
             closeModal('normal-subject-modal');
@@ -1685,10 +1821,7 @@
 
             const contentInput = document.getElementById('spContentInput');
             if (contentInput) contentInput.value = gradeData.content || '';
-            const spCheck = document.getElementById('spSpecialCheck');
-            const spInput = document.getElementById('spSpecialInput');
-            if (spCheck) spCheck.checked = !!gradeData.special;
-            if (spInput) { spInput.value = gradeData.specialText || ''; spInput.disabled = !gradeData.special; }
+            setSpecialControls('sp', gradeData, pId);
             const customHourInput = document.getElementById('spCustomHourInput');
             if (customHourInput) customHourInput.value = '';
 
@@ -1750,9 +1883,14 @@
 
         function toggleSpSpecial() {
             const chk = document.getElementById('spSpecialCheck');
+            const on = !!(chk && chk.checked);
             const inp = document.getElementById('spSpecialInput');
-            if (inp) inp.disabled = !(chk && chk.checked);
-            if (chk && chk.checked && inp) inp.focus();
+            if (inp) inp.disabled = !on;
+            ['spSpecialFrom', 'spSpecialTo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = !on;
+            });
+            if (on && inp) inp.focus();
         }
 
         function saveSpCellDataFromModal() {
@@ -1772,13 +1910,51 @@
                 return;
             }
 
-            data[dayKey][pId][activeSpTargetGrade] = {
-                subject: isSpecial ? '' : selectedSpSubject,
-                hours: selectedSpHours,
-                content: contentVal,
-                special: isSpecial,
-                specialText: isSpecial ? specialText : ''
-            };
+            // この学年分だけを slotId -> セル の形で扱う
+            const cellsBySlot = {};
+            SUBJECT_SLOT_IDS.forEach(id => {
+                if (data[dayKey][id]) cellsBySlot[id] = data[dayKey][id][activeSpTargetGrade];
+            });
+
+            if (isSpecial) {
+                const range = readSpecialRange(document.getElementById('spSpecialFrom'), document.getElementById('spSpecialTo'));
+                if (!range) {
+                    showToast('範囲は「1〜6時間目」または「その他1〜5」の中で指定してください');
+                    return;
+                }
+                const sIdx = SUBJECT_SLOT_IDS.indexOf(range.startId);
+                const eIdx = SUBJECT_SLOT_IDS.indexOf(range.endId);
+                clearOverlappingSpecialRanges(cellsBySlot, sIdx, eIdx);
+                for (let i = sIdx; i <= eIdx; i++) {
+                    const slotId = SUBJECT_SLOT_IDS[i];
+                    cellsBySlot[slotId] = {
+                        subject: '',
+                        hours: selectedSpHours,
+                        content: slotId === range.startId ? contentVal : '',
+                        special: true,
+                        specialText: specialText,
+                        rangeStart: range.startId,
+                        rangeEnd: range.endId
+                    };
+                }
+            } else {
+                const idx = SUBJECT_SLOT_IDS.indexOf(pId);
+                clearOverlappingSpecialRanges(cellsBySlot, idx, idx);
+                cellsBySlot[pId] = {
+                    subject: selectedSpSubject,
+                    hours: selectedSpHours,
+                    content: contentVal,
+                    special: false,
+                    specialText: ''
+                };
+            }
+
+            SUBJECT_SLOT_IDS.forEach(id => {
+                if (cellsBySlot[id] !== undefined) {
+                    if (!data[dayKey][id]) data[dayKey][id] = {};
+                    data[dayKey][id][activeSpTargetGrade] = cellsBySlot[id];
+                }
+            });
 
             localStorage.setItem(getScheduleStorageKey(), JSON.stringify(data));
             closeModal('sp-subject-modal');
