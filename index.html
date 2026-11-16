@@ -1374,9 +1374,6 @@
                 const td = document.createElement('td');
                 td.className = "p-1.5 border border-slate-800 hover:bg-amber-50/60 cursor-pointer transition-colors align-top min-h-[40px]";
                 let innerContent = '';
-                if (holidayName) {
-                    innerContent += `<div class="mb-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-extrabold"><i class="fa-solid fa-flag"></i>${escapeHtml(holidayName)}</div>`;
-                }
                 if (note.event) {
                     innerContent += `<div class="p-1.5 rounded-lg bg-amber-50/90 text-slate-800 border border-amber-200 font-bold text-xs shadow-sm"><p class="text-[11px] font-medium leading-tight text-slate-700">${escapeHtml(note.event)}</p></div>`;
                 }
