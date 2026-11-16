@@ -719,6 +719,15 @@
                     <div id="normalSubjectButtonsGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-52 overflow-y-auto p-1 border rounded-xl bg-slate-50/50"></div>
                 </div>
 
+                <div class="p-3 rounded-xl border-2 border-violet-300 bg-violet-50/70 space-y-1.5">
+                    <label class="flex items-center gap-2 text-violet-950 font-bold cursor-pointer">
+                        <input type="checkbox" id="normalSpecialCheck" onchange="toggleNormalSpecial()" class="w-4 h-4 accent-violet-600">
+                        <i class="fa-solid fa-star text-violet-500"></i> 特別の予定
+                    </label>
+                    <input type="text" id="normalSpecialInput" disabled placeholder="例: 校外学習、学習発表会" class="w-full p-2.5 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-xs sm:text-sm bg-white disabled:bg-slate-100 disabled:text-slate-400">
+                    <p class="text-[11px] text-violet-800">校外学習や学習発表会など、教科でない予定はこちらに入力してください。特別の予定の時数は、時数集計にカウントされません。</p>
+                </div>
+
                 <div>
                     <label class="block text-slate-700 font-bold mb-1">時数（単位時間）を選択</label>
                     <div class="flex gap-2">
@@ -758,6 +767,15 @@
                 <div>
                     <label class="block text-slate-700 font-bold mb-1">教科を選択</label>
                     <div id="spSubjectButtonsGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-52 overflow-y-auto p-1 border rounded-xl bg-slate-50/50"></div>
+                </div>
+
+                <div class="p-3 rounded-xl border-2 border-violet-300 bg-violet-50/70 space-y-1.5">
+                    <label class="flex items-center gap-2 text-violet-950 font-bold cursor-pointer">
+                        <input type="checkbox" id="spSpecialCheck" onchange="toggleSpSpecial()" class="w-4 h-4 accent-violet-600">
+                        <i class="fa-solid fa-star text-violet-500"></i> 特別の予定
+                    </label>
+                    <input type="text" id="spSpecialInput" disabled placeholder="例: 校外学習、学習発表会" class="w-full p-2.5 border-2 border-slate-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:outline-none text-xs sm:text-sm bg-white disabled:bg-slate-100 disabled:text-slate-400">
+                    <p class="text-[11px] text-violet-800">校外学習や学習発表会など、教科でない予定はこちらに入力してください。特別の予定の時数は、時数集計にカウントされません。</p>
                 </div>
 
                 <div>
@@ -1400,7 +1418,14 @@
 
                             activeSpGrades.forEach(g => {
                                 const gData = cellObj[g] || { subject: '', hours: 1, content: '' };
-                                if (gData.subject) {
+                                if (gData.special && gData.specialText) {
+                                    innerHtml += `
+                                        <div onclick="openSpSubjectModal('${cellId}', '${g}')" class="cursor-pointer text-[11px] p-1 rounded-lg border bg-violet-100 text-violet-950 border-violet-400 flex items-center justify-between shadow-sm hover:brightness-95 transition">
+                                            <span class="font-extrabold shrink-0"><i class="fa-solid fa-star text-violet-500 mr-0.5"></i>[${g}] ${escapeHtml(gData.specialText)}</span>
+                                            <span class="text-[9px] font-bold text-violet-600 ml-1 shrink-0">特別</span>
+                                        </div>
+                                    `;
+                                } else if (gData.subject) {
                                     const colorClass = getSubjectColorClass(gData.subject);
                                     innerHtml += `
                                         <div onclick="openSpSubjectModal('${cellId}', '${g}')" class="cursor-pointer text-[11px] p-1 rounded-lg border ${colorClass} flex items-center justify-between shadow-sm hover:brightness-95 transition">
@@ -1421,7 +1446,17 @@
                         } else {
                             // Normal class single-grade rendering
                             const cellObj = dayData[pRow.id] || { subject: '', hours: 1, content: '' };
-                            if (cellObj.subject) {
+                            if (cellObj.special && cellObj.specialText) {
+                                td.innerHTML = `
+                                    <div onclick="openNormalSubjectModal('${cellId}')" class="cursor-pointer p-2 rounded-xl border bg-violet-100 border-violet-400 text-violet-950 min-h-[64px] flex flex-col justify-between shadow-sm hover:scale-[1.01] transition-transform">
+                                        <div class="flex justify-between items-center font-bold">
+                                            <span class="text-sm sm:text-base"><i class="fa-solid fa-star text-violet-500 mr-1"></i>${escapeHtml(cellObj.specialText)}</span>
+                                            <span class="text-[10px] bg-white/80 px-1.5 py-0.5 rounded-md border border-violet-300 font-extrabold text-violet-700">特別</span>
+                                        </div>
+                                        <p class="text-xs text-violet-900/80 mt-1 line-clamp-2 leading-tight">${escapeHtml(cellObj.content || '')}</p>
+                                    </div>
+                                `;
+                            } else if (cellObj.subject) {
                                 const colorClass = getSubjectColorClass(cellObj.subject);
                                 td.innerHTML = `
                                     <div onclick="openNormalSubjectModal('${cellId}')" class="cursor-pointer p-2 rounded-xl border ${colorClass} min-h-[64px] flex flex-col justify-between shadow-sm hover:scale-[1.01] transition-transform">
@@ -1512,6 +1547,11 @@
             const contentInput = document.getElementById('normalContentInput');
             if (contentInput) contentInput.value = cellObj.content || '';
 
+            const spCheck = document.getElementById('normalSpecialCheck');
+            const spInput = document.getElementById('normalSpecialInput');
+            if (spCheck) spCheck.checked = !!cellObj.special;
+            if (spInput) { spInput.value = cellObj.specialText || ''; spInput.disabled = !cellObj.special; }
+
             renderNormalSubjectGrid();
             selectNormalHours(selectedNormalHours);
             openModal('normal-subject-modal');
@@ -1554,6 +1594,13 @@
             });
         }
 
+        function toggleNormalSpecial() {
+            const chk = document.getElementById('normalSpecialCheck');
+            const inp = document.getElementById('normalSpecialInput');
+            if (inp) inp.disabled = !(chk && chk.checked);
+            if (chk && chk.checked && inp) inp.focus();
+        }
+
         function saveNormalCellDataFromModal() {
             if (!activeNormalCellId) return;
             const [dayKey, pId] = activeNormalCellId.split('_');
@@ -1562,10 +1609,19 @@
             if (!data[dayKey]) data[dayKey] = {};
             const contentVal = document.getElementById('normalContentInput')?.value || '';
 
+            const isSpecial = !!document.getElementById('normalSpecialCheck')?.checked;
+            const specialText = (document.getElementById('normalSpecialInput')?.value || '').trim();
+            if (isSpecial && !specialText) {
+                showToast('特別の予定の内容を入力してください');
+                return;
+            }
+
             data[dayKey][pId] = {
-                subject: selectedNormalSubject,
+                subject: isSpecial ? '' : selectedNormalSubject,
                 hours: selectedNormalHours,
-                content: contentVal
+                content: contentVal,
+                special: isSpecial,
+                specialText: isSpecial ? specialText : ''
             };
 
             localStorage.setItem(getScheduleStorageKey(), JSON.stringify(data));
@@ -1627,6 +1683,10 @@
 
             const contentInput = document.getElementById('spContentInput');
             if (contentInput) contentInput.value = gradeData.content || '';
+            const spCheck = document.getElementById('spSpecialCheck');
+            const spInput = document.getElementById('spSpecialInput');
+            if (spCheck) spCheck.checked = !!gradeData.special;
+            if (spInput) { spInput.value = gradeData.specialText || ''; spInput.disabled = !gradeData.special; }
             const customHourInput = document.getElementById('spCustomHourInput');
             if (customHourInput) customHourInput.value = '';
 
@@ -1686,6 +1746,13 @@
             }
         }
 
+        function toggleSpSpecial() {
+            const chk = document.getElementById('spSpecialCheck');
+            const inp = document.getElementById('spSpecialInput');
+            if (inp) inp.disabled = !(chk && chk.checked);
+            if (chk && chk.checked && inp) inp.focus();
+        }
+
         function saveSpCellDataFromModal() {
             if (!activeSpCellId || !activeSpTargetGrade) return;
             const [dayKey, pId] = activeSpCellId.split('_');
@@ -1696,10 +1763,19 @@
 
             const contentVal = document.getElementById('spContentInput')?.value || '';
 
+            const isSpecial = !!document.getElementById('spSpecialCheck')?.checked;
+            const specialText = (document.getElementById('spSpecialInput')?.value || '').trim();
+            if (isSpecial && !specialText) {
+                showToast('特別の予定の内容を入力してください');
+                return;
+            }
+
             data[dayKey][pId][activeSpTargetGrade] = {
-                subject: selectedSpSubject,
+                subject: isSpecial ? '' : selectedSpSubject,
                 hours: selectedSpHours,
-                content: contentVal
+                content: contentVal,
+                special: isSpecial,
+                specialText: isSpecial ? specialText : ''
             };
 
             localStorage.setItem(getScheduleStorageKey(), JSON.stringify(data));
@@ -2054,7 +2130,7 @@
 
                 SUBJECT_SLOT_IDS.forEach(pId => {
                     const cellData = isSp ? (daySchedule[pId] || {})[activeSpSelectedGradeForHours] : daySchedule[pId];
-                    if (cellData && cellData.subject && cellData.hours) {
+                    if (cellData && cellData.subject && cellData.hours && !cellData.special) {
                         const countedSubject = HOURS_SUBJECT_ALIAS[cellData.subject] || cellData.subject;
                         if (dateSubjectHours[countedSubject] !== undefined) {
                             dateSubjectHours[countedSubject] += parseFloat(cellData.hours);
