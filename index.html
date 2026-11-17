@@ -145,8 +145,45 @@
                 height: auto !important;
             }
             #weekFooter {
-                border-color: #000 !important;
+                display: none !important;
+            }
+            #weekFooterPrintTable {
+                display: table !important;
+                width: 100% !important;
+                border-collapse: collapse !important;
+                table-layout: fixed !important;
                 page-break-inside: avoid;
+            }
+            #weekFooterPrintTable td {
+                border: 1.5px solid #000 !important;
+                padding: 4px !important;
+                vertical-align: top;
+                font-size: 11px;
+                line-height: 1.5;
+            }
+            #weekFooterPrintTable .fp-label {
+                width: 5%;
+                background-color: #f1f5f9 !important;
+                font-weight: bold;
+                text-align: center;
+                vertical-align: middle;
+            }
+            #weekFooterPrintTable .fp-notes {
+                width: 43%;
+            }
+            #weekFooterPrintTable .fp-comment {
+                width: 46%;
+            }
+            #weekFooterPrintTable .fp-comment img {
+                float: left;
+                height: 20mm;
+                margin-right: 5px;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            #weekFooterPrintTable .fp-notes div, #weekFooterPrintTable .fp-comment div {
+                white-space: pre-wrap;
+                word-break: break-word;
             }
             #weekFooter > div {
                 border-color: #000 !important;
@@ -208,6 +245,9 @@
         }
         .footer-cell {
             height: 96px;
+        }
+        #weekFooterPrintTable {
+            display: none;
         }
         .footer-print-text {
             display: none;
@@ -474,6 +514,18 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Print-only footer (Chrome印刷でflexが崩れる対策) -->
+                    <table id="weekFooterPrintTable">
+                        <tbody>
+                            <tr>
+                                <td class="fp-label">持ち物＆連絡</td>
+                                <td class="fp-notes"><div id="bringNotesPrint2"></div></td>
+                                <td class="fp-label">今週の一言</td>
+                                <td class="fp-comment"><img id="fpTeacherImg" alt=""><div id="weekCommentPrint2"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </main>
         </div>
@@ -1732,6 +1784,13 @@
             const wcp = document.getElementById('weekCommentPrint');
             if (bn && bnp) { bnp.textContent = bn.value; if (bn.style.fontSize) bnp.style.fontSize = bn.style.fontSize; }
             if (wc && wcp) { wcp.textContent = wc.value; if (wc.style.fontSize) wcp.style.fontSize = wc.style.fontSize; }
+            const bnp2 = document.getElementById('bringNotesPrint2');
+            const wcp2 = document.getElementById('weekCommentPrint2');
+            if (bn && bnp2) { bnp2.textContent = bn.value; if (bn.style.fontSize) bnp2.style.fontSize = bn.style.fontSize; }
+            if (wc && wcp2) { wcp2.textContent = wc.value; if (wc.style.fontSize) wcp2.style.fontSize = wc.style.fontSize; }
+            const fpImg = document.getElementById('fpTeacherImg');
+            const srcImg = document.querySelector('.comment-teacher-img');
+            if (fpImg && srcImg && !fpImg.getAttribute('src')) fpImg.src = srcImg.src;
         }
 
         window.addEventListener('beforeprint', () => { fitFooterFonts(); syncFooterPrintText(); });
