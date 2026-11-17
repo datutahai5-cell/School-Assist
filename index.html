@@ -113,7 +113,7 @@
             }
             #scheduleTable {
                 font-size: 12px;
-                height: 250mm;
+                height: 198mm;
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
             }
@@ -144,6 +144,16 @@
             #scheduleTable textarea {
                 height: auto !important;
             }
+            #weekFooterTable td {
+                border-color: #000 !important;
+            }
+            #weekFooterTable textarea {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            #weekFooterTable tr {
+                page-break-inside: avoid;
+            }
             #scheduleTable tr {
                 page-break-inside: avoid;
             }
@@ -162,6 +172,21 @@
         ::-webkit-scrollbar-thumb {
             background: #cbd5e1;
             border-radius: 4px;
+        }
+        .comment-bubble {
+            position: relative;
+            border: 2px solid #334155;
+            border-radius: 16px;
+            background: #fff;
+        }
+        .comment-bubble::before {
+            content: '';
+            position: absolute;
+            left: -11px;
+            top: 42px;
+            border-width: 6px 11px 6px 0;
+            border-style: solid;
+            border-color: transparent #334155 transparent transparent;
         }
     </style>
 </head>
@@ -380,6 +405,30 @@
                         </thead>
                         <tbody class="divide-y divide-slate-800">
                             <!-- JS dynamically generates rows including 1-6 periods, 下校時間, and その他 -->
+                        </tbody>
+                    </table>
+
+                    <!-- Footer: 持ち物＆連絡 / 今週の一言 -->
+                    <table id="weekFooterTable" class="w-full border-collapse border-2 border-t-0 border-slate-800 text-xs md:text-sm table-fixed">
+                        <colgroup>
+                            <col style="width:6%">
+                            <col style="width:52%">
+                            <col style="width:6%">
+                            <col style="width:36%">
+                        </colgroup>
+                        <tbody>
+                            <tr>
+                                <td class="border border-slate-800 bg-slate-100 text-center font-bold align-middle p-1" style="writing-mode: vertical-rl; letter-spacing: 0.2em;">持ち物＆連絡</td>
+                                <td class="border border-slate-800 align-top p-1">
+                                    <textarea id="bringNotesInput" rows="5" oninput="saveCurrentWeekData()" placeholder="持ち物や連絡事項を入力" class="w-full resize-none focus:outline-none focus:bg-amber-50/50 bg-transparent p-1 leading-relaxed"></textarea>
+                                </td>
+                                <td class="border border-slate-800 bg-slate-100 text-center font-bold align-middle p-1" style="writing-mode: vertical-rl; letter-spacing: 0.2em;">今週の一言</td>
+                                <td class="border border-slate-800 align-top p-2">
+                                    <div class="comment-bubble h-full">
+                                        <textarea id="weekCommentInput" rows="5" oninput="saveCurrentWeekData()" placeholder="今週の一言を入力" class="w-full resize-none focus:outline-none bg-transparent p-1 leading-relaxed"></textarea>
+                                    </div>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -1279,6 +1328,12 @@
             }
 
             const savedData = loadCurrentWeekData();
+
+            const bnEl = document.getElementById('bringNotesInput');
+            const wcEl = document.getElementById('weekCommentInput');
+            if (bnEl) bnEl.value = savedData.bringNotes || '';
+            if (wcEl) wcEl.value = savedData.weekComment || '';
+            footerLoadedForKey = getWeekKey(currentMonday);
             const dayNotes = loadDayNotes();
 
             let headerHtml = `<th class="w-20 md:w-24 p-2 text-center font-bold text-slate-700 bg-slate-200 border border-slate-800">時限/時間</th>`;
@@ -1596,8 +1651,17 @@
                 }
             });
 
+            if (footerLoadedForKey === getWeekKey(currentMonday)) {
+                const bnInput = document.getElementById('bringNotesInput');
+                const wcInput = document.getElementById('weekCommentInput');
+                if (bnInput) existing.bringNotes = bnInput.value;
+                if (wcInput) existing.weekComment = wcInput.value;
+            }
+
             localStorage.setItem(key, JSON.stringify(existing));
         }
+
+        let footerLoadedForKey = null;
 
         function clearCurrentWeekSchedule() {
             const key = getScheduleStorageKey();
