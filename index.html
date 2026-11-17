@@ -164,12 +164,15 @@
             #weekFooterPrintTable .fp-label {
                 width: 5%;
                 background-color: #f1f5f9 !important;
-                font-weight: bold;
-                text-align: center;
                 vertical-align: middle;
+            }
+            #weekFooterPrintTable .fp-label-inner {
                 writing-mode: vertical-rl;
                 text-orientation: upright;
                 letter-spacing: 0.2em;
+                font-weight: bold;
+                white-space: nowrap;
+                margin: 0 auto;
             }
             #weekFooterPrintTable .fp-notes {
                 width: 43%;
@@ -522,9 +525,9 @@
                     <table id="weekFooterPrintTable">
                         <tbody>
                             <tr>
-                                <td class="fp-label">持ち物＆連絡</td>
+                                <td class="fp-label"><div class="fp-label-inner">持ち物＆連絡</div></td>
                                 <td class="fp-notes"><div id="bringNotesPrint2"></div></td>
-                                <td class="fp-label">今週の一言</td>
+                                <td class="fp-label"><div class="fp-label-inner">今週の一言</div></td>
                                 <td class="fp-comment"><img id="fpTeacherImg" alt=""><div id="weekCommentPrint2"></div></td>
                             </tr>
                         </tbody>
