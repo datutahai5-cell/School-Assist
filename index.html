@@ -66,7 +66,7 @@
                 font-size: 10px;
                 padding: 0 !important;
             }
-            #view-home, .no-print, .modal-backdrop {
+            #view-home, .no-print, .modal-backdrop, #saCloudPanel {
                 display: none !important;
             }
             #view-detail, .print-section-only {
@@ -3099,6 +3099,7 @@
 
     function buildPanel() {
         const wrap = document.createElement('div');
+        wrap.id = 'saCloudPanel';
         wrap.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:9999;font-family:sans-serif;';
         const bar = document.createElement('div');
         bar.style.cssText = 'background:#065f46;color:#fff;border-radius:9999px;padding:8px 14px;font-size:12px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;display:flex;align-items:center;gap:6px;';
