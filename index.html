@@ -107,15 +107,29 @@
                 height: auto !important;
                 overflow: visible !important;
             }
+            #view-detail, #view-detail > *, main {
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+            }
             .print-container {
-                overflow: visible !important;
-                height: auto !important;
+                overflow: hidden !important;
+                display: flex !important;
+                flex-direction: column !important;
+                height: 287mm !important;
+                page-break-inside: avoid;
             }
             #scheduleTable {
                 font-size: 12px;
-                height: 186mm;
+                flex: 1 1 auto !important;
+                height: auto !important;
+                min-height: 0 !important;
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
+            }
+            #weekFooterPrintTable {
+                flex: none !important;
             }
             #scheduleTable th, #scheduleTable td {
                 padding: 3px !important;
