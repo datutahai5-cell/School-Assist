@@ -1607,12 +1607,31 @@
 
                     if (pRow.id === 'dismissal') {
                         // Dismissal time row cell (text input for times like 14:30, 15:00, etc.)
-                        const val = typeof dayData.dismissal === 'string' ? dayData.dismissal : (dayData.dismissal?.text || '');
-                        td.innerHTML = `
-                            <div class="flex items-center justify-center p-0.5">
-                                <input type="text" id="cell-dismissal-${day.key}" value="${escapeHtml(val)}" oninput="saveCurrentWeekData()" placeholder="15:00" class="w-full text-center font-bold text-slate-800 bg-amber-50/40 hover:bg-amber-100/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-lg p-1.5 text-xs sm:text-sm border border-amber-200 transition">
-                            </div>
-                        `;
+                        if (isSp) {
+                            // 特支: 学年ごとに下校時間を表示・入力する
+                            const dis = dayData.dismissal;
+                            let disHtml = `<div class="space-y-1 p-0.5">`;
+                            activeSpGrades.forEach(g => {
+                                let gv = '';
+                                if (typeof dis === 'string') gv = dis;
+                                else if (dis && typeof dis === 'object') gv = dis[g] ?? dis.text ?? '';
+                                disHtml += `
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-[10px] font-bold text-slate-500 shrink-0">[${g}]</span>
+                                        <input type="text" id="cell-dismissal-${day.key}-${g}" value="${escapeHtml(gv)}" oninput="saveCurrentWeekData()" placeholder="15:00" class="flex-1 min-w-0 text-center font-bold text-slate-800 bg-amber-50/40 hover:bg-amber-100/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-lg p-1 text-xs border border-amber-200 transition">
+                                    </div>
+                                `;
+                            });
+                            disHtml += `</div>`;
+                            td.innerHTML = disHtml;
+                        } else {
+                            const val = typeof dayData.dismissal === 'string' ? dayData.dismissal : (dayData.dismissal?.text || '');
+                            td.innerHTML = `
+                                <div class="flex items-center justify-center p-0.5">
+                                    <input type="text" id="cell-dismissal-${day.key}" value="${escapeHtml(val)}" oninput="saveCurrentWeekData()" placeholder="15:00" class="w-full text-center font-bold text-slate-800 bg-amber-50/40 hover:bg-amber-100/50 focus:bg-white focus:ring-2 focus:ring-emerald-500 rounded-lg p-1.5 text-xs sm:text-sm border border-amber-200 transition">
+                                </div>
+                            `;
+                        }
                     } else if (pRow.type === 'break') {
                         // 長休み・昼休み: free text stored per calendar date alongside 予定
                         const dateKey = dayKeyMap[dayIdx];
@@ -1750,6 +1769,15 @@
                 const dismissalInput = document.getElementById(`cell-dismissal-${day.key}`);
                 if (dismissalInput) {
                     existing[day.key].dismissal = dismissalInput.value;
+                } else {
+                    const perGradeInputs = document.querySelectorAll(`input[id^="cell-dismissal-${day.key}-"]`);
+                    if (perGradeInputs.length) {
+                        const disObj = {};
+                        perGradeInputs.forEach(inp => {
+                            disObj[inp.id.slice(`cell-dismissal-${day.key}-`.length)] = inp.value;
+                        });
+                        existing[day.key].dismissal = disObj;
+                    }
                 }
             });
 
@@ -2294,30 +2322,24 @@
                 html += `</div>`;
                 html += `<p class="text-[11px] font-bold text-slate-500">学年ごとに時間割を設定できます。タブで学年を切り替えて、それぞれの教科を選んでください。</p>`;
                 activeSpGrades.forEach(g => {
-                    const gradeTpl = perGrade[g] || legacy;
+                    const gradeTplBase = perGrade[g] || legacy;
+                    const gradeTpl = {};
+                    ALL_DAYS.slice(0, 5).forEach(day => {
+                        gradeTpl[day.key] = { ...((gradeTplBase && gradeTplBase[day.key]) || {}) };
+                        if (!gradeTpl[day.key].dismissal) {
+                            // 旧形式（全学年共通の下校時間）から引き継ぐ
+                            const shared = savedTpl && savedTpl.dismissal;
+                            if (shared) {
+                                if (typeof shared[day.key] === 'string') gradeTpl[day.key].dismissal = shared[day.key];
+                                else if (shared[g] && shared[g][day.key]) gradeTpl[day.key].dismissal = shared[g][day.key];
+                            }
+                        }
+                    });
                     html += `<div id="tplSection_${g}" class="space-y-4">`;
                     html += `<div class="font-bold text-slate-800 text-base">【${g}】の時間割</div>`;
-                    html += buildDayCardsHtml(g, gradeTpl, false);
+                    html += buildDayCardsHtml(g, gradeTpl, true);
                     html += `</div>`;
                 });
-                html += `<div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-3 sm:p-4 space-y-2">`;
-                html += `<div class="font-bold text-slate-800 text-sm">下校時間（全学年共通）</div>`;
-                const disSrc = (savedTpl && savedTpl.dismissal) ? savedTpl.dismissal : legacy;
-                ALL_DAYS.slice(0, 5).forEach(day => {
-                    let dv = '15:00';
-                    if (disSrc && disSrc[day.key]) {
-                        dv = (typeof disSrc[day.key] === 'string') ? disSrc[day.key] : (disSrc[day.key].dismissal || '15:00');
-                    }
-                    html += `
-                        <div class="flex items-center gap-2">
-                            <label class="text-xs font-bold text-amber-950 flex items-center gap-1 shrink-0 w-28">
-                                <i class="fa-regular fa-clock text-orange-600"></i> ${day.label}曜日の下校時間:
-                            </label>
-                            <input type="text" id="tpl_dismissal_${day.key}" value="${escapeHtml(dv)}" placeholder="例: 15:00" class="w-32 border-2 border-amber-300 rounded-xl px-2.5 py-1 text-xs font-bold focus:border-emerald-500 focus:outline-none bg-white">
-                        </div>
-                    `;
-                });
-                html += `</div>`;
             } else {
                 html += buildDayCardsHtml('', savedTpl, true);
             }
@@ -2331,7 +2353,7 @@
             const isSp = checkIsSpecialSupportMode();
             let tplObj;
             if (isSp) {
-                tplObj = { __spPerGrade: true, grades: {}, dismissal: {} };
+                tplObj = { __spPerGrade: true, grades: {} };
                 activeSpGrades.forEach(g => {
                     tplObj.grades[g] = {};
                     ALL_DAYS.slice(0, 5).forEach(day => {
@@ -2340,11 +2362,9 @@
                             const sel = document.getElementById(tplInputId(g, day.key, pId));
                             if (sel) tplObj.grades[g][day.key][pId] = sel.value;
                         });
+                        const disInput = document.getElementById(tplInputId(g, day.key, 'dismissal'));
+                        if (disInput) tplObj.grades[g][day.key].dismissal = disInput.value;
                     });
-                });
-                ALL_DAYS.slice(0, 5).forEach(day => {
-                    const disInput = document.getElementById(`tpl_dismissal_${day.key}`);
-                    if (disInput) tplObj.dismissal[day.key] = disInput.value;
                 });
             } else {
                 tplObj = {};
@@ -2405,8 +2425,20 @@
                     }
                 });
 
-                if (isSp && tpl.dismissal && tpl.dismissal[day.key]) {
-                    currentData[day.key].dismissal = tpl.dismissal[day.key];
+                if (isSp) {
+                    const disObj = {};
+                    let disAny = false;
+                    activeSpGrades.forEach(g => {
+                        let v = '';
+                        if (perGrade) v = ((tpl.grades[g] || {})[day.key] || {}).dismissal || '';
+                        if (!v && tpl.dismissal) {
+                            if (typeof tpl.dismissal[day.key] === 'string') v = tpl.dismissal[day.key];
+                            else if (tpl.dismissal[g] && tpl.dismissal[g][day.key]) v = tpl.dismissal[g][day.key];
+                        }
+                        if (v) { disObj[g] = v; disAny = true; }
+                    });
+                    if (disAny) currentData[day.key].dismissal = disObj;
+                    else if (dayTpl.dismissal) currentData[day.key].dismissal = dayTpl.dismissal;
                 } else if (dayTpl.dismissal) {
                     currentData[day.key].dismissal = dayTpl.dismissal;
                 }
