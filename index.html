@@ -496,34 +496,19 @@
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">朝に提出する宿題</label>
                         <input id="renrakuHomework" type="text" placeholder="例：◎プリント2まい" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                        <p class="text-[11px] text-slate-500 font-bold mt-1">前の登校日（月曜なら金曜）の「宿題」から自動で転記されます。直すこともできます。</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">はブラシセットの欄</label>
-                        <input id="renrakuHaburashi" type="text" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">もちもの（○も）</label>
-                        <input id="renrakuMochimono" type="text" placeholder="例：きゅう食セット" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">れんらく（○れ）</label>
-                        <input id="renrakuRenraku" type="text" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">自学</label>
-                        <input id="renrakuJigaku" type="text" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">ドリルパーク</label>
-                        <input id="renrakuDrill" type="text" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">しゅくだい（○し）</label>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">宿題（◯し）</label>
                         <input id="renrakuShukudai" type="text" placeholder="例：プリント1まい" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">連絡する事がら</label>
-                        <input id="renrakuContact" type="text" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                        <label class="block text-sm font-bold text-slate-600 mb-1">持ち物（◯も）</label>
+                        <input id="renrakuMochimono" type="text" placeholder="例：きゅう食セット" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">連絡（◯れ）</label>
+                        <input id="renrakuRenraku" type="text" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
                     </div>
                 </div>
                 <p class="text-xs text-slate-500 font-bold">入力すると自動で保存されます（週案と同じクラウド保存）。月・日・曜日は送信時に日付から自動で入ります。</p>
@@ -1570,6 +1555,19 @@
             const key = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
             openRenrakuForDate(key);
         }
+        function prevSchoolDayKey(dateKey) {
+            const notes = (typeof loadDayNotes === 'function') ? loadDayNotes() : {};
+            const d = new Date(dateKey + 'T00:00:00');
+            for (let i = 0; i < 14; i++) {
+                d.setDate(d.getDate() - 1);
+                const dow = d.getDay();
+                if (dow === 0 || dow === 6) continue;
+                const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                if (notes[key] && notes[key].holiday) continue;
+                return key;
+            }
+            return null;
+        }
         function openRenrakuForDate(dateKey) {
             if (!dateKey) return;
             renrakuCurrentDate = dateKey;
@@ -1577,14 +1575,16 @@
             const e = entries[dateKey] || {};
             const set = (id, v) => { document.getElementById(id).value = v || ''; };
             set('renrakuDate', dateKey);
-            set('renrakuHomework', e.homework);
-            set('renrakuHaburashi', e.haburashi !== undefined ? e.haburashi : 'はブラシセット');
+            if (e.homework !== undefined) {
+                set('renrakuHomework', e.homework);
+            } else {
+                const prevKey = prevSchoolDayKey(dateKey);
+                const prev = prevKey ? (entries[prevKey] || {}) : {};
+                set('renrakuHomework', prev.shukudai || '');
+            }
+            set('renrakuShukudai', e.shukudai);
             set('renrakuMochimono', e.mochimono);
             set('renrakuRenraku', e.renraku);
-            set('renrakuJigaku', e.jigaku !== undefined ? e.jigaku : '自学');
-            set('renrakuDrill', e.drill !== undefined ? e.drill : 'ドリルパーク');
-            set('renrakuShukudai', e.shukudai);
-            set('renrakuContact', e.contact);
             const d = new Date(dateKey + 'T00:00:00');
             const w = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
             document.getElementById('renrakuEditTitle').innerHTML = '<i class="fa-solid fa-note-sticky"></i> 連絡帳 ' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + w + '）';
@@ -1600,13 +1600,9 @@
             const prev = entries[renrakuCurrentDate] || {};
             entries[renrakuCurrentDate] = {
                 homework: document.getElementById('renrakuHomework').value,
-                haburashi: document.getElementById('renrakuHaburashi').value,
+                shukudai: document.getElementById('renrakuShukudai').value,
                 mochimono: document.getElementById('renrakuMochimono').value,
                 renraku: document.getElementById('renrakuRenraku').value,
-                jigaku: document.getElementById('renrakuJigaku').value,
-                drill: document.getElementById('renrakuDrill').value,
-                shukudai: document.getElementById('renrakuShukudai').value,
-                contact: document.getElementById('renrakuContact').value,
                 sends: prev.sends || {},
                 updatedAt: new Date().toISOString()
             };
@@ -1653,10 +1649,10 @@
                     body: JSON.stringify({
                         token: t.token || '',
                         date: renrakuCurrentDate,
-                        homework: e.homework || '', haburashi: e.haburashi || '',
-                        mochimono: e.mochimono || '', renraku: e.renraku || '',
-                        jigaku: e.jigaku || '', drill: e.drill || '',
-                        shukudai: e.shukudai || '', contact: e.contact || ''
+                        homework: e.homework || '',
+                        shukudai: e.shukudai || '',
+                        mochimono: e.mochimono || '',
+                        renraku: e.renraku || ''
                     })
                 });
                 const text = await res.text();
