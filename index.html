@@ -66,7 +66,7 @@
                 font-size: 10px;
                 padding: 0 !important;
             }
-            #view-home, .no-print, .modal-backdrop, #saCloudPanel {
+            #view-home, #view-renraku, .no-print, .modal-backdrop, #saCloudPanel {
                 display: none !important;
             }
             #view-detail, .print-section-only {
@@ -314,6 +314,10 @@
                         <i class="fa-solid fa-calculator text-lg"></i>
                         <span>時数の計算</span>
                     </button>
+                    <button onclick="showRenrakuView()" class="bg-orange-500 hover:bg-orange-600 text-white rounded-2xl px-4 py-2.5 font-bold text-sm sm:text-base flex items-center gap-2 shadow-md transition touch-target">
+                        <i class="fa-solid fa-note-sticky text-lg"></i>
+                        <span>連絡帳</span>
+                    </button>
                     <button id="settingsBtn" onclick="openModal('settings-modal')" class="burst-button text-amber-900 rounded-2xl px-4 py-2.5 font-bold text-sm sm:text-base flex items-center gap-2 shadow-sm touch-target">
                         <i class="fa-solid fa-gear text-orange-600 text-lg sm:text-xl"></i>
                         <span>設定・時間割</span>
@@ -435,6 +439,83 @@
                         <span class="font-bold text-2xl text-slate-900">その他</span>
                         <span id="badge-その他" class="mt-1 text-xs font-bold text-slate-700 bg-slate-100 border border-slate-300 rounded-full px-2.5 py-0.5">0件</span>
                     </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- VIEW: RENRAKU (朝の連絡) -->
+        <div id="view-renraku" class="hidden space-y-4">
+            <header class="bg-orange-500 text-white rounded-2xl p-3 sm:p-4 shadow-md flex flex-wrap justify-between items-center gap-3">
+                <button onclick="showHomeView()" class="flex items-center gap-2 bg-white/15 hover:bg-white/25 rounded-xl px-3 py-2 font-bold text-sm transition touch-target">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>ホームへ戻る</span>
+                </button>
+                <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-note-sticky"></i> 朝の連絡（連絡帳）
+                </h2>
+                <span class="text-sm font-bold bg-white/20 rounded-full px-3 py-1">学校のシートへ送信</span>
+            </header>
+
+            <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <label class="font-bold text-slate-700">日付</label>
+                    <input id="renrakuDate" type="date" class="border-2 border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    <span class="text-xs text-slate-500 font-bold">月・日・曜日は自動で入ります</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">朝に提出する宿題</label>
+                        <input id="renrakuHomework" type="text" placeholder="例：◎プリント2まい" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">はブラシセットの欄</label>
+                        <input id="renrakuHaburashi" type="text" value="はブラシセット" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">もちもの（○も）</label>
+                        <input id="renrakuMochimono" type="text" placeholder="例：きゅう食セット" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">れんらく（○れ）</label>
+                        <input id="renrakuRenraku" type="text" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">自学</label>
+                        <input id="renrakuJigaku" type="text" value="自学" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">ドリルパーク</label>
+                        <input id="renrakuDrill" type="text" value="ドリルパーク" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">しゅくだい（○し）</label>
+                        <input id="renrakuShukudai" type="text" placeholder="例：プリント1まい" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-1">連絡する事がら</label>
+                        <input id="renrakuContact" type="text" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                </div>
+                <button id="renrakuSendBtn" onclick="sendRenraku()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-2xl text-lg shadow transition touch-target">
+                    <i class="fa-solid fa-paper-plane"></i> スプレッドシートに送る
+                </button>
+                <p id="renrakuLastLog" class="text-xs text-slate-500 font-bold"></p>
+            </section>
+
+            <section class="border-2 border-slate-300 rounded-3xl p-4 sm:p-6 bg-white/70 space-y-3">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-slate-500"></i> 送信先の設定（初回のみ）
+                </h3>
+                <div>
+                    <label class="block text-sm font-bold text-slate-600 mb-1">ウェブアプリのURL（学校アカウントでデプロイしたもの）</label>
+                    <input id="renrakuGasUrl" type="text" placeholder="https://script.google.com/macros/s/..." class="w-full border-2 border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-400">
+                </div>
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-bold text-slate-600 mb-1">合言葉</label>
+                        <input id="renrakuToken" type="text" placeholder="スクリプト側とそろえてください" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                    <button onclick="saveRenrakuConfig()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl px-5 py-2.5 shadow transition touch-target">設定を保存</button>
                 </div>
             </section>
         </div>
@@ -1361,13 +1442,96 @@
             exitArchiveView();
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-detail').classList.add('hidden');
+            document.getElementById('view-renraku').classList.add('hidden');
             updateHomeViewUI();
         }
 
         function showDetailView() {
             document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-renraku').classList.add('hidden');
             document.getElementById('view-detail').classList.remove('hidden');
             renderScheduleTable();
+        }
+
+        function showRenrakuView() {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-detail').classList.add('hidden');
+            document.getElementById('view-renraku').classList.remove('hidden');
+            initRenrakuView();
+        }
+
+        // ===== 朝の連絡（連絡帳）送信 =====
+        const RENRAKU_CONFIG_KEY = 'sa_renraku_config';
+        function loadRenrakuConfig() {
+            try { return JSON.parse(localStorage.getItem(RENRAKU_CONFIG_KEY) || '{}'); } catch (e) { return {}; }
+        }
+        function saveRenrakuConfig() {
+            const url = document.getElementById('renrakuGasUrl').value.trim();
+            const token = document.getElementById('renrakuToken').value.trim();
+            localStorage.setItem(RENRAKU_CONFIG_KEY, JSON.stringify({ url: url, token: token }));
+            showToast('連絡帳の送信先を保存しました');
+        }
+        function initRenrakuView() {
+            const cfg = loadRenrakuConfig();
+            document.getElementById('renrakuGasUrl').value = cfg.url || '';
+            document.getElementById('renrakuToken').value = cfg.token || '';
+            const dateEl = document.getElementById('renrakuDate');
+            if (!dateEl.value) {
+                const t = new Date();
+                const m = String(t.getMonth() + 1).padStart(2, '0');
+                const d = String(t.getDate()).padStart(2, '0');
+                dateEl.value = t.getFullYear() + '-' + m + '-' + d;
+            }
+            const last = localStorage.getItem('sa_renraku_last') || '';
+            document.getElementById('renrakuLastLog').textContent = last ? ('前回の送信：' + last) : '';
+        }
+        async function sendRenraku() {
+            const cfg = loadRenrakuConfig();
+            const url = (cfg.url || document.getElementById('renrakuGasUrl').value.trim());
+            const token = (cfg.token || document.getElementById('renrakuToken').value.trim());
+            if (!url) { showToast('先に送信先のURLを設定してください'); return; }
+            const btn = document.getElementById('renrakuSendBtn');
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '送信中...';
+            try {
+                const payload = {
+                    token: token,
+                    date: document.getElementById('renrakuDate').value,
+                    homework: document.getElementById('renrakuHomework').value,
+                    haburashi: document.getElementById('renrakuHaburashi').value,
+                    mochimono: document.getElementById('renrakuMochimono').value,
+                    renraku: document.getElementById('renrakuRenraku').value,
+                    jigaku: document.getElementById('renrakuJigaku').value,
+                    drill: document.getElementById('renrakuDrill').value,
+                    shukudai: document.getElementById('renrakuShukudai').value,
+                    contact: document.getElementById('renrakuContact').value
+                };
+                const res = await fetch(url, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                const text = await res.text();
+                let json = null;
+                try { json = JSON.parse(text); } catch (e) {}
+                if (json && json.status === 'success') {
+                    const now = new Date();
+                    const log = payload.date + ' の分を ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0') + ' に送信';
+                    localStorage.setItem('sa_renraku_last', log);
+                    document.getElementById('renrakuLastLog').textContent = '前回の送信：' + log;
+                    showToast('連絡帳をスプレッドシートに送りました');
+                } else {
+                    throw new Error((json && json.message) || 'unknown');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('送信に失敗しました。URL・合言葉・デプロイの公開範囲を確認してください', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
         }
 
         function navigateToTodayWeek() {
