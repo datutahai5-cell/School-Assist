@@ -66,7 +66,7 @@
                 font-size: 10px;
                 padding: 0 !important;
             }
-            #view-home, #view-documents, .no-print, .modal-backdrop, #saCloudPanel {
+            #view-home, .no-print, .modal-backdrop, #saCloudPanel {
                 display: none !important;
             }
             #view-detail, .print-section-only {
@@ -314,10 +314,6 @@
                         <i class="fa-solid fa-calculator text-lg"></i>
                         <span>時数の計算</span>
                     </button>
-                    <button onclick="showDocumentsView()" class="bg-sky-600 hover:bg-sky-700 text-white rounded-2xl px-4 py-2.5 font-bold text-sm sm:text-base flex items-center gap-2 shadow-md transition touch-target">
-                        <i class="fa-solid fa-folder-open text-lg"></i>
-                        <span>書類管理</span>
-                    </button>
                     <button id="settingsBtn" onclick="openModal('settings-modal')" class="burst-button text-amber-900 rounded-2xl px-4 py-2.5 font-bold text-sm sm:text-base flex items-center gap-2 shadow-sm touch-target">
                         <i class="fa-solid fa-gear text-orange-600 text-lg sm:text-xl"></i>
                         <span>設定・時間割</span>
@@ -440,50 +436,6 @@
                         <span id="badge-その他" class="mt-1 text-xs font-bold text-slate-700 bg-slate-100 border border-slate-300 rounded-full px-2.5 py-0.5">0件</span>
                     </button>
                 </div>
-            </section>
-        </div>
-
-        <!-- VIEW: DOCUMENTS -->
-        <div id="view-documents" class="hidden space-y-4">
-            <header class="bg-sky-700 text-white rounded-2xl p-3 sm:p-4 shadow-md flex flex-wrap justify-between items-center gap-3">
-                <button onclick="showHomeView()" class="flex items-center gap-2 bg-white/15 hover:bg-white/25 rounded-xl px-3 py-2 font-bold text-sm transition touch-target">
-                    <i class="fa-solid fa-arrow-left"></i>
-                    <span>ホームへ戻る</span>
-                </button>
-                <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
-                    <i class="fa-solid fa-folder-open"></i> 書類管理
-                </h2>
-                <div class="flex items-center gap-2 text-sm font-bold">
-                    <label for="docStudentCount">児童数</label>
-                    <input id="docStudentCount" type="number" min="1" max="45" value="10" onchange="saveDocStudentCount()" class="w-16 text-slate-800 rounded-lg px-2 py-1.5 font-bold">
-                </div>
-            </header>
-
-            <!-- 書類の登録 -->
-            <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-3">
-                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-file-circle-plus text-sky-600"></i> 書類を登録する
-                </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                    <input id="docTitleInput" type="text" placeholder="書類の名前（例：校外学習の承諾書）" class="sm:col-span-5 border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-sky-500">
-                    <select id="docKindInput" class="sm:col-span-2 border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-sky-500 bg-white">
-                        <option value="submit">提出が必要</option>
-                        <option value="distribute">配布のみ</option>
-                    </select>
-                    <input id="docDueInput" type="date" class="sm:col-span-3 border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-sky-500">
-                    <button onclick="addDocument()" class="sm:col-span-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl px-4 py-2.5 shadow transition touch-target">
-                        <i class="fa-solid fa-plus"></i> 登録
-                    </button>
-                </div>
-                <input id="docMemoInput" type="text" placeholder="メモ（任意）" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:border-sky-500">
-            </section>
-
-            <!-- 書類の一覧 -->
-            <section class="space-y-3">
-                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-list-check text-sky-600"></i> 登録した書類
-                </h3>
-                <div id="docList" class="space-y-3"></div>
             </section>
         </div>
 
@@ -1409,160 +1361,13 @@
             exitArchiveView();
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-detail').classList.add('hidden');
-            document.getElementById('view-documents').classList.add('hidden');
             updateHomeViewUI();
         }
 
         function showDetailView() {
             document.getElementById('view-home').classList.add('hidden');
-            document.getElementById('view-documents').classList.add('hidden');
             document.getElementById('view-detail').classList.remove('hidden');
             renderScheduleTable();
-        }
-
-        function showDocumentsView() {
-            document.getElementById('view-home').classList.add('hidden');
-            document.getElementById('view-detail').classList.add('hidden');
-            document.getElementById('view-documents').classList.remove('hidden');
-            renderDocuments();
-        }
-
-        // ===== 書類管理 =====
-        const DOC_KEY = 'edu_documents';
-        const DOC_META_KEY = 'edu_documents_meta';
-        let openCheckDocId = null;
-
-        function loadDocuments() {
-            try {
-                const arr = JSON.parse(localStorage.getItem(DOC_KEY) || '[]');
-                return Array.isArray(arr) ? arr : [];
-            } catch (e) { return []; }
-        }
-        function saveDocuments(arr) {
-            localStorage.setItem(DOC_KEY, JSON.stringify(arr));
-        }
-        function loadDocStudentCount() {
-            try {
-                const meta = JSON.parse(localStorage.getItem(DOC_META_KEY) || '{}');
-                if (meta && meta.count) return Math.max(1, Math.min(45, parseInt(meta.count, 10) || 10));
-            } catch (e) {}
-            return 10;
-        }
-        function saveDocStudentCount() {
-            const v = parseInt(document.getElementById('docStudentCount').value, 10);
-            const count = isNaN(v) ? 10 : Math.max(1, Math.min(45, v));
-            localStorage.setItem(DOC_META_KEY, JSON.stringify({ count: count }));
-            renderDocuments();
-        }
-        function docEsc(s) {
-            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-        }
-        function addDocument() {
-            const title = document.getElementById('docTitleInput').value.trim();
-            if (!title) { showToast('書類の名前を入力してください'); return; }
-            const kind = document.getElementById('docKindInput').value;
-            const due = document.getElementById('docDueInput').value || '';
-            const memo = document.getElementById('docMemoInput').value.trim();
-            const docs = loadDocuments();
-            docs.unshift({
-                id: 'doc_' + Date.now().toString(36) + Math.floor(Math.random() * 1000),
-                title: title, kind: kind, due: due, memo: memo,
-                checks: {}, createdAt: new Date().toISOString()
-            });
-            saveDocuments(docs);
-            document.getElementById('docTitleInput').value = '';
-            document.getElementById('docDueInput').value = '';
-            document.getElementById('docMemoInput').value = '';
-            renderDocuments();
-            showToast('書類を登録しました');
-        }
-        function deleteDocument(id) {
-            if (!confirm('この書類の登録とチェック記録を削除します。よろしいですか？')) return;
-            saveDocuments(loadDocuments().filter(d => d.id !== id));
-            if (openCheckDocId === id) openCheckDocId = null;
-            renderDocuments();
-        }
-        function toggleDocCheckPanel(id) {
-            openCheckDocId = (openCheckDocId === id) ? null : id;
-            renderDocuments();
-        }
-        function toggleDocCheck(id, num) {
-            const docs = loadDocuments();
-            const doc = docs.find(d => d.id === id);
-            if (!doc) return;
-            doc.checks = doc.checks || {};
-            if (doc.checks[num]) delete doc.checks[num]; else doc.checks[num] = true;
-            saveDocuments(docs);
-            renderDocuments();
-        }
-        function docDueInfo(due) {
-            if (!due) return { text: '締切なし', cls: 'bg-slate-100 text-slate-600 border-slate-300' };
-            const today = new Date(); today.setHours(0,0,0,0);
-            const d = new Date(due + 'T00:00:00');
-            const diff = Math.round((d - today) / 86400000);
-            const label = '締切 ' + due.replace(/-/g, '/');
-            if (diff < 0) return { text: label + '（過ぎています）', cls: 'bg-rose-100 text-rose-700 border-rose-300' };
-            if (diff === 0) return { text: label + '（今日）', cls: 'bg-rose-100 text-rose-700 border-rose-300' };
-            if (diff <= 3) return { text: label + '（あと' + diff + '日）', cls: 'bg-amber-100 text-amber-800 border-amber-300' };
-            return { text: label + '（あと' + diff + '日）', cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
-        }
-        function renderDocuments() {
-            const countInput = document.getElementById('docStudentCount');
-            const count = loadDocStudentCount();
-            if (countInput && document.activeElement !== countInput) countInput.value = count;
-            const list = document.getElementById('docList');
-            if (!list) return;
-            const docs = loadDocuments();
-            if (docs.length === 0) {
-                list.innerHTML = '<div class="border-2 border-dashed border-slate-300 rounded-3xl p-8 text-center text-slate-500 font-bold bg-white/70">まだ書類が登録されていません。上のフォームから登録してください。</div>';
-                return;
-            }
-            list.innerHTML = '';
-            docs.forEach(doc => {
-                const checks = doc.checks || {};
-                const doneNums = Object.keys(checks).filter(k => checks[k]).map(Number).sort((a, b) => a - b);
-                const isSubmit = doc.kind !== 'distribute';
-                const verb = isSubmit ? '提出' : '配布';
-                const due = docDueInfo(doc.due);
-                const missing = [];
-                for (let n = 1; n <= count; n++) if (!checks[n]) missing.push(n);
-                const card = document.createElement('div');
-                card.className = 'border-2 border-slate-800 rounded-3xl p-4 sm:p-5 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-3';
-                let html = '';
-                html += '<div class="flex flex-wrap items-center gap-2">';
-                html += '<span class="font-bold text-lg text-slate-800">' + docEsc(doc.title) + '</span>';
-                html += '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ' + (isSubmit ? 'bg-sky-100 text-sky-800 border-sky-300' : 'bg-violet-100 text-violet-800 border-violet-300') + '">' + (isSubmit ? '提出が必要' : '配布のみ') + '</span>';
-                html += '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ' + due.cls + '">' + due.text + '</span>';
-                html += '<span class="text-sm font-bold text-slate-600 ml-auto">' + verb + ' ' + doneNums.length + ' / ' + count + '人</span>';
-                html += '</div>';
-                if (doc.memo) html += '<p class="text-sm text-slate-600">' + docEsc(doc.memo) + '</p>';
-                if (missing.length > 0 && missing.length < count) {
-                    html += '<p class="text-sm font-bold text-rose-600">まだの人：' + missing.join('・') + '番</p>';
-                } else if (missing.length === 0) {
-                    html += '<p class="text-sm font-bold text-emerald-600">全員' + verb + '済みです</p>';
-                }
-                html += '<div class="flex flex-wrap gap-2">';
-                html += '<button data-act="check" class="bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl px-4 py-2 text-sm shadow transition touch-target">' + verb + 'チェック</button>';
-                html += '<button data-act="del" class="bg-white hover:bg-rose-50 text-rose-600 border-2 border-rose-300 font-bold rounded-xl px-4 py-2 text-sm transition touch-target">削除</button>';
-                html += '</div>';
-                if (openCheckDocId === doc.id) {
-                    html += '<div class="border-t-2 border-dashed border-slate-300 pt-3">';
-                    html += '<p class="text-xs font-bold text-slate-500 mb-2">番号を押すと' + verb + '済みになります（もう一度押すと取り消し）</p>';
-                    html += '<div class="flex flex-wrap gap-2">';
-                    for (let n = 1; n <= count; n++) {
-                        const on = !!checks[n];
-                        html += '<button data-num="' + n + '" class="w-12 h-12 rounded-xl border-2 font-bold text-lg transition touch-target ' + (on ? 'bg-emerald-500 border-emerald-700 text-white' : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400') + '">' + n + '</button>';
-                    }
-                    html += '</div></div>';
-                }
-                card.innerHTML = html;
-                card.querySelector('[data-act="check"]').addEventListener('click', () => toggleDocCheckPanel(doc.id));
-                card.querySelector('[data-act="del"]').addEventListener('click', () => deleteDocument(doc.id));
-                card.querySelectorAll('[data-num]').forEach(btn => {
-                    btn.addEventListener('click', () => toggleDocCheck(doc.id, parseInt(btn.getAttribute('data-num'), 10)));
-                });
-                list.appendChild(card);
-            });
         }
 
         function navigateToTodayWeek() {
