@@ -506,20 +506,20 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">朝に提出する宿題</label>
-                        <input id="renrakuHomework" type="text" placeholder="例：◎プリント2まい" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                        <textarea id="renrakuHomework" rows="2" placeholder="例：◎プリント2まい" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400"></textarea>
                         <p class="text-[11px] text-slate-500 font-bold mt-1">前の登校日（月曜なら金曜）の「宿題」から自動で転記されます。直すこともできます。</p>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">宿題（◯し）</label>
-                        <input id="renrakuShukudai" type="text" placeholder="例：プリント1まい" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                        <textarea id="renrakuShukudai" rows="2" placeholder="例：プリント1まい（複数あるときは1行に1つ）" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">持ち物（◯も）</label>
-                        <input id="renrakuMochimono" type="text" placeholder="例：きゅう食セット" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                        <textarea id="renrakuMochimono" rows="2" placeholder="例：きゅう食セット（複数あるときは1行に1つ）" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-1">連絡（◯れ）</label>
-                        <input id="renrakuRenraku" type="text" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                        <textarea id="renrakuRenraku" rows="2" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400"></textarea>
                     </div>
                 </div>
                 <p class="text-xs text-slate-500 font-bold">入力すると自動で保存されます（週案と同じクラウド保存）。月・日・曜日は送信時に日付から自動で入ります。</p>
