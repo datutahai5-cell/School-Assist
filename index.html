@@ -535,7 +535,8 @@
             <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-4">
                 <div id="renrakuGradeFilter" class="flex flex-wrap gap-2"></div>
                 <div class="border-2 border-slate-200 rounded-2xl p-3 sm:p-4">
-                    <h3 class="font-black text-slate-700 mb-2"><i class="fa-solid fa-chart-pie text-orange-500"></i> 宿題の内訳</h3>
+                    <h3 class="font-black text-slate-700"><i class="fa-solid fa-chart-pie text-orange-500"></i> 宿題の内訳</h3>
+                    <p id="renrakuChartPeriod" class="text-xs font-bold text-slate-500 mb-2"></p>
                     <div id="renrakuChart" class="flex flex-col sm:flex-row items-center gap-4"></div>
                 </div>
                 <input id="renrakuHistorySearch" type="text" placeholder="キーワードで探す（例：九九、プリント）" oninput="renderRenrakuHistory()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
@@ -1781,7 +1782,10 @@
         }
         function collectHomeworkItems(entries, gradeFilter) {
             const items = [];
+            const period = (typeof hasCurrentYear !== 'undefined' && hasCurrentYear && currentStartDate && currentEndDate)
+                ? { start: currentStartDate, end: currentEndDate } : null;
             Object.keys(entries).forEach(dateKey => {
+                if (period && (dateKey < period.start || dateKey > period.end)) return;
                 const e = entries[dateKey] || {};
                 if (e.grades) {
                     Object.keys(e.grades).forEach(tid => {
@@ -1797,6 +1801,15 @@
         }
         function renderRenrakuChart(entries, targets) {
             const wrap = document.getElementById('renrakuChart');
+            const periodEl = document.getElementById('renrakuChartPeriod');
+            if (periodEl) {
+                if (typeof hasCurrentYear !== 'undefined' && hasCurrentYear && currentStartDate && currentEndDate) {
+                    const fmt = s => { const p = s.split('-'); return p[0] + '年' + Number(p[1]) + '月' + Number(p[2]) + '日'; };
+                    periodEl.textContent = '対象期間：' + fmt(currentStartDate) + ' 〜 ' + fmt(currentEndDate) + '（今年度の設定期間）';
+                } else {
+                    periodEl.textContent = '対象期間：すべての記録（今年度が未設定のため）';
+                }
+            }
             const items = collectHomeworkItems(entries, renrakuHistoryGrade);
             if (items.length === 0) {
                 wrap.innerHTML = '<p class="font-bold text-slate-400">まだ集計できる宿題がありません。</p>';
