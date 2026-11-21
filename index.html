@@ -533,6 +533,11 @@
                 </h2>
             </div>
             <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-4">
+                <div id="renrakuGradeFilter" class="flex flex-wrap gap-2"></div>
+                <div class="border-2 border-slate-200 rounded-2xl p-3 sm:p-4">
+                    <h3 class="font-black text-slate-700 mb-2"><i class="fa-solid fa-chart-pie text-orange-500"></i> 宿題の内訳</h3>
+                    <div id="renrakuChart" class="flex flex-col sm:flex-row items-center gap-4"></div>
+                </div>
                 <input id="renrakuHistorySearch" type="text" placeholder="キーワードで探す（例：九九、プリント）" oninput="renderRenrakuHistory()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
                 <div id="renrakuHistoryList" class="space-y-3"></div>
             </section>
@@ -1757,11 +1762,79 @@
             document.getElementById('view-renraku-history').classList.remove('hidden');
             renderRenrakuHistory();
         }
+        let renrakuHistoryGrade = 'all';
+        const HW_CATEGORIES = [
+            { name: 'プリント', re: /プリント/, color: '#f97316' },
+            { name: '音読', re: /おんどく|音読/, color: '#0ea5e9' },
+            { name: '九九', re: /九九/, color: '#eab308' },
+            { name: 'ドリルパーク', re: /ドリルパーク/, color: '#14b8a6' },
+            { name: '漢字', re: /漢字|かんじ/, color: '#22c55e' },
+            { name: '計算・算数', re: /計算|算数|けいさん/, color: '#a855f7' },
+            { name: '日記', re: /日記/, color: '#ec4899' },
+            { name: '自学', re: /自学|自主/, color: '#64748b' },
+            { name: 'ワーク', re: /ワーク/, color: '#f43f5e' },
+            { name: 'その他', re: /$^/, color: '#94a3b8' }
+        ];
+        function categorizeHomework(text) {
+            for (const c of HW_CATEGORIES) { if (c.re.test(text)) return c; }
+            return HW_CATEGORIES[HW_CATEGORIES.length - 1];
+        }
+        function collectHomeworkItems(entries, gradeFilter) {
+            const items = [];
+            Object.keys(entries).forEach(dateKey => {
+                const e = entries[dateKey] || {};
+                if (e.grades) {
+                    Object.keys(e.grades).forEach(tid => {
+                        if (gradeFilter !== 'all' && tid !== gradeFilter) return;
+                        const g = e.grades[tid] || {};
+                        if (g.shukudai) g.shukudai.split('\n').filter(x => x.trim() !== '').forEach(x => items.push(x));
+                    });
+                } else if (e.shukudai) {
+                    if (gradeFilter === 'all' || gradeFilter === 'common') e.shukudai.split('\n').filter(x => x.trim() !== '').forEach(x => items.push(x));
+                }
+            });
+            return items;
+        }
+        function renderRenrakuChart(entries, targets) {
+            const wrap = document.getElementById('renrakuChart');
+            const items = collectHomeworkItems(entries, renrakuHistoryGrade);
+            if (items.length === 0) {
+                wrap.innerHTML = '<p class="font-bold text-slate-400">まだ集計できる宿題がありません。</p>';
+                return;
+            }
+            const counts = {};
+            items.forEach(x => { const c = categorizeHomework(x); counts[c.name] = (counts[c.name] || 0) + 1; });
+            const total = items.length;
+            const R = 80, C = 2 * Math.PI * R;
+            let acc = 0, segs = '', legend = '';
+            HW_CATEGORIES.forEach(c => {
+                const n = counts[c.name] || 0;
+                if (n === 0) return;
+                const frac = n / total;
+                segs += '<circle cx="100" cy="100" r="' + R + '" fill="none" stroke="' + c.color + '" stroke-width="34" stroke-dasharray="' + (frac * C) + ' ' + C + '" transform="rotate(' + (-90 + acc * 360) + ' 100 100)"></circle>';
+                acc += frac;
+                legend += '<div class="flex items-center gap-2 font-bold text-slate-700 text-sm"><span class="w-3.5 h-3.5 rounded" style="background:' + c.color + '"></span>' + c.name + ' <span class="text-slate-500">' + n + '件（' + Math.round(frac * 100) + '%）</span></div>';
+            });
+            wrap.innerHTML =
+                '<div class="relative shrink-0"><svg width="200" height="200" viewBox="0 0 200 200">' + segs + '</svg>' +
+                '<div class="absolute inset-0 flex flex-col items-center justify-center"><span class="text-2xl font-black text-slate-800">' + total + '件</span><span class="text-xs font-bold text-slate-500">宿題の合計</span></div></div>' +
+                '<div class="grid grid-cols-2 gap-x-5 gap-y-1.5">' + legend + '</div>';
+        }
+        function renderRenrakuGradeFilter(targets) {
+            const wrap = document.getElementById('renrakuGradeFilter');
+            const mk = (id, label) => '<button onclick="setRenrakuHistoryGrade(\'' + id + '\')" class="font-bold rounded-full px-4 py-1.5 text-sm border-2 transition ' + (renrakuHistoryGrade === id ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-300') + '">' + label + '</button>';
+            let html = mk('all', '全部');
+            targets.forEach(t => { html += mk(t.id, renrakuEsc(t.label)); });
+            wrap.innerHTML = html;
+        }
+        function setRenrakuHistoryGrade(id) { renrakuHistoryGrade = id; renderRenrakuHistory(); }
         function renderRenrakuHistory() {
             const wrap = document.getElementById('renrakuHistoryList');
             const q = (document.getElementById('renrakuHistorySearch').value || '').trim();
             const entries = loadRenrakuEntries();
             const targets = loadRenrakuTargets().filter(t => t.label);
+            renderRenrakuGradeFilter(targets);
+            renderRenrakuChart(entries, targets);
             const labelOf = id => { const t = targets.find(x => x.id === id); return t ? t.label : '共通'; };
             const dates = Object.keys(entries).sort().reverse();
             let html = '';
@@ -1770,11 +1843,12 @@
                 const rows = [];
                 if (e.grades) {
                     Object.keys(e.grades).forEach(tid => {
+                        if (renrakuHistoryGrade !== 'all' && tid !== renrakuHistoryGrade) return;
                         const g = e.grades[tid] || {};
                         if (g.shukudai) rows.push({ label: labelOf(tid), text: g.shukudai });
                     });
                 } else if (e.shukudai) {
-                    rows.push({ label: '共通', text: e.shukudai });
+                    if (renrakuHistoryGrade === 'all') rows.push({ label: '共通', text: e.shukudai });
                 }
                 if (rows.length === 0) return;
                 if (q && !rows.some(r => r.text.includes(q))) return;
