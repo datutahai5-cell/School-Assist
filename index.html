@@ -66,7 +66,7 @@
                 font-size: 10px;
                 padding: 0 !important;
             }
-            #view-home, #view-renraku-settings, #view-renraku-edit, .renraku-day-btn, .no-print, .modal-backdrop, #saCloudPanel {
+            #view-home, #view-renraku-settings, #view-renraku-edit, #view-renraku-history, .renraku-day-btn, .no-print, .modal-backdrop, #saCloudPanel {
                 display: none !important;
             }
             #view-detail, .print-section-only {
@@ -458,6 +458,14 @@
                 </button>
             </header>
 
+            <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-3">
+                <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-clock-rotate-left text-orange-500"></i> これまでの記録</h3>
+                <p class="text-sm text-slate-600">過去に出した宿題を、日付ごとにさかのぼって見られます。</p>
+                <button onclick="openRenrakuHistory()" class="w-full bg-slate-700 hover:bg-slate-800 text-white font-bold py-3 rounded-2xl shadow transition touch-target">
+                    <i class="fa-solid fa-list"></i> 宿題の記録を見る
+                </button>
+            </section>
+
             <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-4">
                 <div>
                     <h3 class="font-bold text-lg text-slate-800">中継の設定（個人アカウントの送信用シート）</h3>
@@ -513,6 +521,23 @@
         </div>
 
         <!-- VIEW 2: WEEKLY SCHEDULE VIEW -->
+        <!-- 連絡帳 宿題の記録ビュー -->
+        <div id="view-renraku-history" class="hidden space-y-4">
+            <div class="flex items-center gap-3">
+                <button onclick="showRenrakuSettings()" class="bg-white border-2 border-slate-300 text-slate-600 font-bold px-4 py-2.5 rounded-xl shadow-sm hover:bg-slate-50 transition flex items-center gap-2 touch-target">
+                    <i class="fa-solid fa-arrow-left"></i> 戻る
+                </button>
+                <h2 class="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2">
+                    <span class="bg-orange-500 text-white w-9 h-9 rounded-lg flex items-center justify-center shadow"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                    宿題の記録
+                </h2>
+            </div>
+            <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-4">
+                <input id="renrakuHistorySearch" type="text" placeholder="キーワードで探す（例：九九、プリント）" oninput="renderRenrakuHistory()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">
+                <div id="renrakuHistoryList" class="space-y-3"></div>
+            </section>
+        </div>
+
         <div id="view-detail" class="hidden space-y-4">
             <header class="bg-emerald-700 text-white rounded-2xl p-3 sm:p-4 shadow-md no-print flex flex-wrap justify-between items-center gap-3">
                 <div class="flex items-center space-x-3">
@@ -1451,6 +1476,7 @@
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.add('hidden');
+            document.getElementById('view-renraku-history').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.remove('hidden');
             renderRenrakuTargets();
         }
@@ -1599,6 +1625,7 @@
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.add('hidden');
+            document.getElementById('view-renraku-history').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.remove('hidden');
 
             const wrap = document.getElementById('renrakuGradeSections');
@@ -1720,6 +1747,48 @@
                 if (await sendRenrakuTo(t.id)) okCount++;
             }
             showToast(okCount === targets.length ? '全部の学年に送りました' : (okCount + ' / ' + targets.length + ' 件に送信できました'));
+        }
+
+        function openRenrakuHistory() {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-detail').classList.add('hidden');
+            document.getElementById('view-renraku-settings').classList.add('hidden');
+            document.getElementById('view-renraku-edit').classList.add('hidden');
+            document.getElementById('view-renraku-history').classList.remove('hidden');
+            renderRenrakuHistory();
+        }
+        function renderRenrakuHistory() {
+            const wrap = document.getElementById('renrakuHistoryList');
+            const q = (document.getElementById('renrakuHistorySearch').value || '').trim();
+            const entries = loadRenrakuEntries();
+            const targets = loadRenrakuTargets().filter(t => t.label);
+            const labelOf = id => { const t = targets.find(x => x.id === id); return t ? t.label : '共通'; };
+            const dates = Object.keys(entries).sort().reverse();
+            let html = '';
+            dates.forEach(dateKey => {
+                const e = entries[dateKey] || {};
+                const rows = [];
+                if (e.grades) {
+                    Object.keys(e.grades).forEach(tid => {
+                        const g = e.grades[tid] || {};
+                        if (g.shukudai) rows.push({ label: labelOf(tid), text: g.shukudai });
+                    });
+                } else if (e.shukudai) {
+                    rows.push({ label: '共通', text: e.shukudai });
+                }
+                if (rows.length === 0) return;
+                if (q && !rows.some(r => r.text.includes(q))) return;
+                const d = new Date(dateKey + 'T00:00:00');
+                const w = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+                html += '<div class="border-2 border-slate-200 rounded-2xl p-3 sm:p-4">';
+                html += '<button onclick="openRenrakuForDate(\'' + dateKey + '\')" class="font-black text-slate-700 hover:text-orange-600">' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + w + '） <i class="fa-solid fa-pen text-xs"></i></button>';
+                rows.forEach(r => {
+                    const items = r.text.split('\n').filter(x => x.trim() !== '');
+                    html += '<div class="mt-1.5 flex gap-2 items-start"><span class="shrink-0 text-xs font-bold bg-orange-100 text-orange-700 rounded-full px-2 py-0.5 mt-0.5">' + renrakuEsc(r.label) + '</span><div class="font-bold text-slate-700">' + items.map(x => '・' + renrakuEsc(x)).join('<br>') + '</div></div>';
+                });
+                html += '</div>';
+            });
+            wrap.innerHTML = html || '<p class="font-bold text-slate-400">' + (q ? '「' + renrakuEsc(q) + '」を含む宿題の記録はありません。' : 'まだ宿題の記録がありません。連絡帳で宿題を入力すると、ここにたまっていきます。') + '</p>';
         }
 
         function navigateToTodayWeek() {
