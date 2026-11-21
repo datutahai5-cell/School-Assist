@@ -460,8 +460,19 @@
 
             <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-4">
                 <div>
-                    <h3 class="font-bold text-lg text-slate-800">送信先のスプレッドシート（クラスルームに貼ったシート）</h3>
-                    <p class="text-sm text-slate-600 mt-1">特支の場合は、所属する学年の数だけ送信先を登録してください（例：3学年なら3つ）。それぞれのシートでデプロイしたウェブアプリのURLを貼ります。連絡帳のデータ自体は週案と同じクラウドに保存されます。</p>
+                    <h3 class="font-bold text-lg text-slate-800">中継の設定（個人アカウントの送信用シート）</h3>
+                    <p class="text-sm text-slate-600 mt-1">連絡帳は、個人アカウントの「朝の連絡 送信用」シートに一度書き込まれ、学校のシートがそれを読みに来る方式です。送信用シートでデプロイした中継用ウェブアプリのURLを貼ってください。</p>
+                </div>
+                <div class="space-y-2">
+                    <input id="renrakuRelayUrl" type="text" placeholder="中継用ウェブアプリのURL（https://script.google.com/macros/s/...）" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-orange-400">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-500">中継用合言葉</span>
+                        <input id="renrakuRelayToken" type="text" placeholder="中継スクリプト側とそろえる" class="flex-1 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-orange-400">
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800">送信先の学年</h3>
+                    <p class="text-sm text-slate-600 mt-1">特支の場合は、所属する学年の数だけ登録してください（例：3学年なら3つ）。名前は送信用シートのタブ名とそろえます。</p>
                 </div>
                 <div id="renrakuTargetList" class="space-y-3"></div>
                 <div class="flex flex-wrap gap-2">
@@ -518,6 +529,7 @@
                 <h3 class="font-bold text-slate-700 flex items-center gap-2">
                     <i class="fa-solid fa-paper-plane text-orange-500"></i> クラスルームのシートへ送る
                 </h3>
+                <p class="text-xs text-slate-500 font-bold">「送る」を押すと送信用シートに書き込まれ、学校のシートに自動で反映されます。</p>
                 <div id="renrakuSendList" class="space-y-2"></div>
                 <button onclick="sendRenrakuAll()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-2xl shadow transition touch-target">
                     全部の送信先に送る
@@ -1476,40 +1488,47 @@
         function loadRenrakuTargets() {
             try {
                 const arr = JSON.parse(localStorage.getItem(RENRAKU_TARGETS_KEY) || 'null');
-                if (Array.isArray(arr) && arr.length) return arr;
+                if (Array.isArray(arr) && arr.length) return arr.map(t => ({ id: t.id || ('t' + Math.random().toString(36).slice(2, 8)), label: t.label || '' }));
             } catch (e) {}
-            // 旧形式（単一URL）の設定があれば引き継ぐ
+            return [{ id: 't1', label: '' }];
+        }
+        const RENRAKU_RELAY_KEY = 'edu_renraku_relay';
+        function loadRenrakuRelay() {
             try {
-                const old = JSON.parse(localStorage.getItem('sa_renraku_config') || '{}');
-                if (old.url) return [{ id: 't1', label: '', url: old.url, token: old.token || '' }];
-            } catch (e) {}
-            return [{ id: 't1', label: '', url: '', token: 'renraku2026' }];
+                const cfg = JSON.parse(localStorage.getItem(RENRAKU_RELAY_KEY) || '{}');
+                return { url: cfg.url || '', token: cfg.token || 'renraku2026' };
+            } catch (e) { return { url: '', token: 'renraku2026' }; }
+        }
+        function saveRenrakuRelay() {
+            const url = document.getElementById('renrakuRelayUrl').value.trim();
+            const token = document.getElementById('renrakuRelayToken').value.trim();
+            localStorage.setItem(RENRAKU_RELAY_KEY, JSON.stringify({ url: url, token: token }));
         }
         function writeRenrakuTargets(arr) {
             localStorage.setItem(RENRAKU_TARGETS_KEY, JSON.stringify(arr));
         }
         function renderRenrakuTargets() {
+            const relay = loadRenrakuRelay();
+            const urlEl = document.getElementById('renrakuRelayUrl');
+            const tokenEl = document.getElementById('renrakuRelayToken');
+            if (urlEl) urlEl.value = relay.url;
+            if (tokenEl) tokenEl.value = relay.token;
             const list = document.getElementById('renrakuTargetList');
             if (!list) return;
             const targets = loadRenrakuTargets();
             list.innerHTML = '';
             targets.forEach((t, i) => {
                 const card = document.createElement('div');
-                card.className = 'border-2 border-slate-300 rounded-2xl p-3 sm:p-4 bg-white space-y-2';
+                card.className = 'border-2 border-slate-300 rounded-2xl p-3 sm:p-4 bg-white';
                 card.innerHTML =
                     '<div class="flex items-center gap-2">' +
-                      '<span class="font-bold text-slate-700">送信先' + (i + 1) + '</span>' +
+                      '<span class="font-bold text-slate-700">学年' + (i + 1) + '</span>' +
                       '<input type="text" data-f="label" placeholder="学年の名前（例：1年生）" value="' + renrakuEsc(t.label || '') + '" class="flex-1 border-2 border-slate-300 rounded-lg px-2 py-1.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">' +
                       '<button type="button" data-act="del" class="text-rose-600 border-2 border-rose-300 hover:bg-rose-50 font-bold rounded-lg px-3 py-1.5 text-sm transition">削除</button>' +
-                    '</div>' +
-                    '<input type="text" data-f="url" placeholder="https://script.google.com/macros/s/..." value="' + renrakuEsc(t.url || '') + '" class="w-full border-2 border-slate-300 rounded-lg px-2 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-orange-400">' +
-                    '<div class="flex items-center gap-2">' +
-                      '<span class="text-xs font-bold text-slate-500">合言葉</span>' +
-                      '<input type="text" data-f="token" placeholder="スクリプト側とそろえる" value="' + renrakuEsc(t.token || '') + '" class="flex-1 border-2 border-slate-300 rounded-lg px-2 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-orange-400">' +
                     '</div>';
                 card.querySelector('[data-act="del"]').addEventListener('click', () => {
                     const arr = collectRenrakuTargets().filter(x => x.id !== t.id);
-                    writeRenrakuTargets(arr.length ? arr : [{ id: 't1', label: '', url: '', token: 'renraku2026' }]);
+                    writeRenrakuTargets(arr.length ? arr : [{ id: 't1', label: '' }]);
                     renderRenrakuTargets();
                 });
                 list.appendChild(card);
@@ -1522,9 +1541,7 @@
             cards.forEach((card, i) => {
                 out.push({
                     id: (prev[i] && prev[i].id) || ('t' + Date.now().toString(36) + i),
-                    label: card.querySelector('[data-f="label"]').value.trim(),
-                    url: card.querySelector('[data-f="url"]').value.trim(),
-                    token: card.querySelector('[data-f="token"]').value.trim()
+                    label: card.querySelector('[data-f="label"]').value.trim()
                 });
             });
             return out;
@@ -1532,11 +1549,12 @@
         function addRenrakuTarget() {
             const arr = collectRenrakuTargets();
             if (arr.length >= 6) { showToast('送信先は最大6つまでです'); return; }
-            arr.push({ id: 't' + Date.now().toString(36), label: '', url: '', token: 'renraku2026' });
+            arr.push({ id: 't' + Date.now().toString(36), label: '' });
             writeRenrakuTargets(arr);
             renderRenrakuTargets();
         }
         function saveRenrakuTargets() {
+            saveRenrakuRelay();
             writeRenrakuTargets(collectRenrakuTargets());
             showToast('連絡帳の送信先を保存しました');
         }
@@ -1611,12 +1629,12 @@
         function renderRenrakuSendList() {
             const wrap = document.getElementById('renrakuSendList');
             if (!wrap) return;
-            const targets = loadRenrakuTargets().filter(t => t.url);
+            const targets = loadRenrakuTargets().filter(t => t.label);
             const entries = loadRenrakuEntries();
             const e = entries[renrakuCurrentDate] || {};
             const sends = e.sends || {};
             if (targets.length === 0) {
-                wrap.innerHTML = '<p class="text-sm font-bold text-slate-500">送信先が未設定です。ホームの「連絡帳」ボタンからURLを登録してください。</p>';
+                wrap.innerHTML = '<p class="text-sm font-bold text-slate-500">送信先の学年が未設定です。ホームの「連絡帳」ボタンから登録してください。</p>';
                 return;
             }
             wrap.innerHTML = '';
@@ -1636,18 +1654,21 @@
         async function sendRenrakuTo(targetId) {
             const targets = loadRenrakuTargets();
             const t = targets.find(x => x.id === targetId);
-            if (!t || !t.url) { showToast('送信先のURLが未設定です'); return false; }
+            if (!t || !t.label) { showToast('送信先の学年が未設定です'); return false; }
+            const relay = loadRenrakuRelay();
+            if (!relay.url) { showToast('先に中継用ウェブアプリのURLを設定してください'); return false; }
             if (!renrakuCurrentDate) return false;
             saveRenrakuEntry();
             const entries = loadRenrakuEntries();
             const e = entries[renrakuCurrentDate] || {};
             try {
-                const res = await fetch(t.url, {
+                const res = await fetch(relay.url, {
                     method: 'POST',
                     redirect: 'follow',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
-                        token: t.token || '',
+                        token: relay.token || '',
+                        grade: t.label,
                         date: renrakuCurrentDate,
                         homework: e.homework || '',
                         shukudai: e.shukudai || '',
@@ -1668,18 +1689,18 @@
                         localStorage.setItem(RENRAKU_ENTRIES_KEY, JSON.stringify(entries2));
                     }
                     renderRenrakuSendList();
-                    showToast('「' + (t.label || '送信先') + '」のシートに送りました');
+                    showToast('「' + t.label + '」に送りました。学校のシートに反映されます');
                     return true;
                 }
                 throw new Error((json && json.message) || 'unknown');
             } catch (err) {
                 console.error(err);
-                showToast('送信に失敗しました。URL・合言葉・デプロイの公開範囲を確認してください');
+                showToast('送信に失敗しました。中継URL・合言葉・デプロイを確認してください');
                 return false;
             }
         }
         async function sendRenrakuAll() {
-            const targets = loadRenrakuTargets().filter(t => t.url);
+            const targets = loadRenrakuTargets().filter(t => t.label);
             if (targets.length === 0) { showToast('送信先が未設定です'); return; }
             let okCount = 0;
             for (const t of targets) {
