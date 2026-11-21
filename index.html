@@ -503,38 +503,13 @@
             </header>
 
             <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">朝に提出する宿題</label>
-                        <textarea id="renrakuHomework" rows="2" placeholder="例：◎プリント2まい" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400"></textarea>
-                        <p class="text-[11px] text-slate-500 font-bold mt-1">前の登校日（月曜なら金曜）の「宿題」から自動で転記されます。直すこともできます。</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">宿題（◯し）</label>
-                        <textarea id="renrakuShukudai" rows="2" placeholder="例：プリント1まい（複数あるときは1行に1つ）" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">持ち物（◯も）</label>
-                        <textarea id="renrakuMochimono" rows="2" placeholder="例：きゅう食セット（複数あるときは1行に1つ）" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-1">連絡（◯れ）</label>
-                        <textarea id="renrakuRenraku" rows="2" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400"></textarea>
-                    </div>
-                </div>
-                <p class="text-xs text-slate-500 font-bold">入力すると自動で保存されます（週案と同じクラウド保存）。月・日・曜日は送信時に日付から自動で入ります。</p>
-            </section>
-
-            <section class="border-2 border-slate-300 rounded-3xl p-4 sm:p-6 bg-white/80 space-y-3">
-                <h3 class="font-bold text-slate-700 flex items-center gap-2">
-                    <i class="fa-solid fa-paper-plane text-orange-500"></i> クラスルームのシートへ送る
-                </h3>
-                <p class="text-xs text-slate-500 font-bold">「送る」を押すと送信用シートに書き込まれ、学校のシートに自動で反映されます。</p>
-                <div id="renrakuSendList" class="space-y-2"></div>
-                <button onclick="sendRenrakuAll()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-2xl shadow transition touch-target">
-                    全部の送信先に送る
+                <div id="renrakuGradeSections" class="space-y-5"></div>
+                <p class="text-xs text-slate-500 font-bold">入力すると自動で保存されます（週案と同じクラウド保存）。月・日・曜日は送信時に日付から自動で入ります。「朝に提出する宿題」は前の登校日（月曜は金曜）の同じ学年の「宿題」から自動で転記されます。</p>
+                <button onclick="sendRenrakuAll()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-2xl text-lg shadow transition touch-target">
+                    <i class="fa-solid fa-paper-plane"></i> 全部の学年に送る
                 </button>
             </section>
+
         </div>
 
         <!-- VIEW 2: WEEKLY SCHEDULE VIEW -->
@@ -1586,23 +1561,36 @@
             }
             return null;
         }
+        const RENRAKU_FIELDS = [
+            { key: 'homework', label: '朝に提出する宿題', ph: '例：◎プリント2まい' },
+            { key: 'shukudai', label: '宿題（◯し）', ph: '例：プリント1まい（複数あるときは1行に1つ）' },
+            { key: 'mochimono', label: '持ち物（◯も）', ph: '例：きゅう食セット（複数あるときは1行に1つ）' },
+            { key: 'renraku', label: '連絡（◯れ）', ph: '' }
+        ];
+        const RENRAKU_GRADE_STYLES = [
+            { head: 'bg-orange-500', ring: 'border-orange-300' },
+            { head: 'bg-sky-600', ring: 'border-sky-300' },
+            { head: 'bg-emerald-600', ring: 'border-emerald-300' },
+            { head: 'bg-violet-600', ring: 'border-violet-300' },
+            { head: 'bg-rose-500', ring: 'border-rose-300' },
+            { head: 'bg-amber-500', ring: 'border-amber-300' }
+        ];
+
         function openRenrakuForDate(dateKey) {
             if (!dateKey) return;
             renrakuCurrentDate = dateKey;
             const entries = loadRenrakuEntries();
-            const e = entries[dateKey] || {};
-            const set = (id, v) => { document.getElementById(id).value = v || ''; };
-            set('renrakuDate', dateKey);
-            if (e.homework !== undefined) {
-                set('renrakuHomework', e.homework);
-            } else {
-                const prevKey = prevSchoolDayKey(dateKey);
-                const prev = prevKey ? (entries[prevKey] || {}) : {};
-                set('renrakuHomework', prev.shukudai || '');
-            }
-            set('renrakuShukudai', e.shukudai);
-            set('renrakuMochimono', e.mochimono);
-            set('renrakuRenraku', e.renraku);
+            const entry = entries[dateKey] || {};
+            const gradesData = entry.grades || null;
+            const legacy = (!gradesData && (entry.homework !== undefined || entry.shukudai !== undefined)) ? entry : null;
+            const prevKey = prevSchoolDayKey(dateKey);
+            const prevEntry = prevKey ? (entries[prevKey] || {}) : {};
+            const prevGrades = prevEntry.grades || null;
+            const sends = entry.sends || {};
+            const targets = loadRenrakuTargets().filter(t => t.label);
+
+            const dateEl = document.getElementById('renrakuDate');
+            if (dateEl) dateEl.value = dateKey;
             const d = new Date(dateKey + 'T00:00:00');
             const w = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
             document.getElementById('renrakuEditTitle').innerHTML = '<i class="fa-solid fa-note-sticky"></i> 連絡帳 ' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + w + '）';
@@ -1610,46 +1598,60 @@
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.remove('hidden');
-            renderRenrakuSendList();
+
+            const wrap = document.getElementById('renrakuGradeSections');
+            wrap.innerHTML = '';
+            if (targets.length === 0) {
+                wrap.innerHTML = '<p class="font-bold text-slate-500">送信先の学年が未登録です。ホームの「連絡帳」ボタンから学年を登録してください。</p>';
+                return;
+            }
+            targets.forEach((t, idx) => {
+                const style = RENRAKU_GRADE_STYLES[idx % RENRAKU_GRADE_STYLES.length];
+                const data = (gradesData && gradesData[t.id]) || legacy || {};
+                const prevData = (prevGrades && prevGrades[t.id]) || prevEntry || {};
+                const section = document.createElement('div');
+                section.className = 'border-2 ' + style.ring + ' rounded-2xl overflow-hidden';
+                let html = '<div class="' + style.head + ' text-white font-bold px-4 py-2 flex items-center gap-2">' +
+                    '<span class="text-lg">' + renrakuEsc(t.label) + '</span>' +
+                    (sends[t.id]
+                        ? '<span class="text-xs bg-white/25 rounded-full px-2 py-0.5">送信済み ' + renrakuEsc(sends[t.id]) + '</span>'
+                        : '<span class="text-xs bg-white/25 rounded-full px-2 py-0.5">未送信</span>') +
+                    '<button data-send="' + t.id + '" class="ml-auto bg-white text-slate-700 font-bold rounded-lg px-4 py-1.5 text-sm shadow">この学年に送る</button>' +
+                    '</div>';
+                html += '<div class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white">';
+                RENRAKU_FIELDS.forEach(f => {
+                    let v = data[f.key];
+                    if (v === undefined) v = (f.key === 'homework') ? (prevData.shukudai || '') : '';
+                    html += '<div><label class="block text-sm font-bold text-slate-600 mb-1">' + f.label + '</label>' +
+                        '<textarea id="rk-' + t.id + '-' + f.key + '" rows="2" placeholder="' + f.ph + '" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">' + renrakuEsc(v) + '</textarea></div>';
+                });
+                html += '</div>';
+                section.innerHTML = html;
+                section.querySelector('[data-send]').addEventListener('click', () => sendRenrakuTo(t.id));
+                wrap.appendChild(section);
+            });
         }
         function saveRenrakuEntry() {
             if (!renrakuCurrentDate) return;
+            const targets = loadRenrakuTargets().filter(t => t.label);
+            if (targets.length === 0) return;
             const entries = loadRenrakuEntries();
             const prev = entries[renrakuCurrentDate] || {};
+            const grades = {};
+            targets.forEach(t => {
+                const g = {};
+                RENRAKU_FIELDS.forEach(f => {
+                    const el = document.getElementById('rk-' + t.id + '-' + f.key);
+                    g[f.key] = el ? el.value : '';
+                });
+                grades[t.id] = g;
+            });
             entries[renrakuCurrentDate] = {
-                homework: document.getElementById('renrakuHomework').value,
-                shukudai: document.getElementById('renrakuShukudai').value,
-                mochimono: document.getElementById('renrakuMochimono').value,
-                renraku: document.getElementById('renrakuRenraku').value,
+                grades: grades,
                 sends: prev.sends || {},
                 updatedAt: new Date().toISOString()
             };
             localStorage.setItem(RENRAKU_ENTRIES_KEY, JSON.stringify(entries));
-        }
-        function renderRenrakuSendList() {
-            const wrap = document.getElementById('renrakuSendList');
-            if (!wrap) return;
-            const targets = loadRenrakuTargets().filter(t => t.label);
-            const entries = loadRenrakuEntries();
-            const e = entries[renrakuCurrentDate] || {};
-            const sends = e.sends || {};
-            if (targets.length === 0) {
-                wrap.innerHTML = '<p class="text-sm font-bold text-slate-500">送信先の学年が未設定です。ホームの「連絡帳」ボタンから登録してください。</p>';
-                return;
-            }
-            wrap.innerHTML = '';
-            targets.forEach(t => {
-                const row = document.createElement('div');
-                row.className = 'flex items-center gap-2 bg-white border-2 border-slate-200 rounded-xl px-3 py-2';
-                const name = t.label || '送信先';
-                const sent = sends[t.id];
-                row.innerHTML =
-                    '<span class="font-bold text-slate-700">' + renrakuEsc(name) + '</span>' +
-                    (sent ? '<span class="text-xs font-bold text-emerald-600">送信済み ' + renrakuEsc(sent) + '</span>' : '<span class="text-xs font-bold text-slate-400">未送信</span>') +
-                    '<button class="ml-auto bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg px-4 py-1.5 text-sm shadow transition">送る</button>';
-                row.querySelector('button').addEventListener('click', () => sendRenrakuTo(t.id));
-                wrap.appendChild(row);
-            });
         }
         async function sendRenrakuTo(targetId) {
             const targets = loadRenrakuTargets();
@@ -1660,7 +1662,7 @@
             if (!renrakuCurrentDate) return false;
             saveRenrakuEntry();
             const entries = loadRenrakuEntries();
-            const e = entries[renrakuCurrentDate] || {};
+            const e = ((entries[renrakuCurrentDate] || {}).grades || {})[targetId] || {};
             try {
                 const res = await fetch(relay.url, {
                     method: 'POST',
@@ -1688,7 +1690,7 @@
                         entries2[renrakuCurrentDate].sends[targetId] = hm;
                         localStorage.setItem(RENRAKU_ENTRIES_KEY, JSON.stringify(entries2));
                     }
-                    renderRenrakuSendList();
+                    openRenrakuForDate(renrakuCurrentDate);
                     showToast('「' + t.label + '」に送りました。学校のシートに反映されます');
                     return true;
                 }
@@ -1706,7 +1708,7 @@
             for (const t of targets) {
                 if (await sendRenrakuTo(t.id)) okCount++;
             }
-            showToast(okCount === targets.length ? '全部の送信先に送りました' : (okCount + ' / ' + targets.length + ' 件に送信できました'));
+            showToast(okCount === targets.length ? '全部の学年に送りました' : (okCount + ' / ' + targets.length + ' 件に送信できました'));
         }
 
         function navigateToTodayWeek() {
