@@ -1459,6 +1459,7 @@
         const RENRAKU_TARGETS_KEY = 'edu_renraku_targets';
         const RENRAKU_ENTRIES_KEY = 'edu_renraku_entries';
         let renrakuCurrentDate = null;
+        let renrakuHwManual = {};
 
         function loadRenrakuTargets() {
             try {
@@ -1587,6 +1588,7 @@
             const prevEntry = prevKey ? (entries[prevKey] || {}) : {};
             const prevGrades = prevEntry.grades || null;
             const sends = entry.sends || {};
+            renrakuHwManual = {};
             const targets = loadRenrakuTargets().filter(t => t.label);
 
             const dateEl = document.getElementById('renrakuDate');
@@ -1619,11 +1621,19 @@
                     '<button data-send="' + t.id + '" class="ml-auto bg-white text-slate-700 font-bold rounded-lg px-4 py-1.5 text-sm shadow">この学年に送る</button>' +
                     '</div>';
                 html += '<div class="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white">';
+                if (data.hwManual) renrakuHwManual[t.id] = true;
                 RENRAKU_FIELDS.forEach(f => {
-                    let v = data[f.key];
-                    if (v === undefined) v = (f.key === 'homework') ? (prevData.shukudai || '') : '';
+                    let v;
+                    if (f.key === 'homework') {
+                        v = data.hwManual ? (data.homework || '') : (prevData.shukudai || '');
+                    } else {
+                        v = (data[f.key] === undefined) ? '' : data[f.key];
+                    }
+                    const oninput = (f.key === 'homework')
+                        ? 'renrakuHwManual[\'' + t.id + '\']=true; saveRenrakuEntry()'
+                        : 'saveRenrakuEntry()';
                     html += '<div><label class="block text-sm font-bold text-slate-600 mb-1">' + f.label + '</label>' +
-                        '<textarea id="rk-' + t.id + '-' + f.key + '" rows="2" placeholder="' + f.ph + '" oninput="saveRenrakuEntry()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">' + renrakuEsc(v) + '</textarea></div>';
+                        '<textarea id="rk-' + t.id + '-' + f.key + '" rows="2" placeholder="' + f.ph + '" oninput="' + oninput + '" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-orange-400">' + renrakuEsc(v) + '</textarea></div>';
                 });
                 html += '</div>';
                 section.innerHTML = html;
@@ -1644,6 +1654,7 @@
                     const el = document.getElementById('rk-' + t.id + '-' + f.key);
                     g[f.key] = el ? el.value : '';
                 });
+                g.hwManual = !!renrakuHwManual[t.id] || !!((prev.grades || {})[t.id] || {}).hwManual;
                 grades[t.id] = g;
             });
             entries[renrakuCurrentDate] = {
