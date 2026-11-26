@@ -641,7 +641,7 @@
                             <input type="text" id="weekTitle" value="週案" oninput="saveCurrentWeekData()" class="font-bold text-lg md:text-xl text-slate-800 focus:bg-amber-50 px-2 py-0.5 rounded-lg border border-transparent hover:border-slate-300 focus:outline-none w-64">
                         </div>
                         <div class="text-xs text-slate-500 flex items-center gap-4">
-                            <span id="weekRangeDisplay" class="font-bold text-slate-800 text-lg sm:text-xl"></span>
+                            <span id="weekRangeDisplay" class="font-bold text-slate-800 text-lg sm:text-xl whitespace-nowrap"></span>
                             <span id="modeInfoDisplay" class="no-print hidden md:inline text-xs font-medium px-2.5 py-1 rounded-full border"></span>
                         </div>
                     </div>
@@ -2032,7 +2032,14 @@
 
             const formatYMD = d => `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
             if (weekRangeDisplay) {
-                weekRangeDisplay.textContent = `${formatYMD(currentMonday)} ～ ${formatYMD(sundayDate)}`;
+                if (panelModeActive) {
+                    // パネル表示中は幅が狭いので「M/D ～ M/D」の短い表記で1行に収める
+                    weekRangeDisplay.textContent = `${currentMonday.getMonth()+1}/${currentMonday.getDate()} ～ ${sundayDate.getMonth()+1}/${sundayDate.getDate()}`;
+                    weekRangeDisplay.style.fontSize = '15px';
+                } else {
+                    weekRangeDisplay.textContent = `${formatYMD(currentMonday)} ～ ${formatYMD(sundayDate)}`;
+                    weekRangeDisplay.style.fontSize = '';
+                }
             }
             if (datePicker) {
                 const y = currentMonday.getFullYear();
