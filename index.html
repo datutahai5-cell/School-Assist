@@ -86,11 +86,11 @@
         }
         #sidePanelTab:hover { background: #10b981; }
         #sidePanelTab.tab-open {
-            right: calc(min(1200px, 76%) + 12px);
+            right: calc(min(1100px, 70%) + 12px);
             clip-path: polygon(100% 50%, 0 0, 0 100%);
             padding: 0 8px 0 0;
         }
-        #sidePanel { width: min(1200px, 76%); }
+        #sidePanel { width: min(1100px, 70%); }
         @media print {
             @page {
                 size: A4 portrait;
@@ -2026,6 +2026,7 @@
             if (modeInfoDisplay) modeInfoDisplay.style.display = panelModeActive ? 'none' : '';
             const weekFooterEl = document.getElementById('weekFooter');
             if (weekFooterEl) weekFooterEl.style.display = panelModeActive ? 'none' : '';
+            if (weekTitleInput) weekTitleInput.style.width = panelModeActive ? '6.5rem' : '';
 
             const sundayDate = new Date(currentMonday);
             sundayDate.setDate(currentMonday.getDate() + (showWeekend ? 6 : 4));
@@ -2033,8 +2034,8 @@
             const formatYMD = d => `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
             if (weekRangeDisplay) {
                 if (panelModeActive) {
-                    // パネル表示中は幅が狭いので「M/D ～ M/D」の短い表記で1行に収める
-                    weekRangeDisplay.textContent = `${currentMonday.getMonth()+1}/${currentMonday.getDate()} ～ ${sundayDate.getMonth()+1}/${sundayDate.getDate()}`;
+                    // パネル表示中もフル表記。文字を少し小さくして1行に収める
+                    weekRangeDisplay.textContent = `${formatYMD(currentMonday)} ～ ${formatYMD(sundayDate)}`;
                     weekRangeDisplay.style.fontSize = '15px';
                 } else {
                     weekRangeDisplay.textContent = `${formatYMD(currentMonday)} ～ ${formatYMD(sundayDate)}`;
