@@ -102,7 +102,7 @@
                 font-size: 10px;
                 padding: 0 !important;
             }
-            #view-home, #view-tasks, #view-renraku-settings, #view-renraku-edit, #view-renraku-history, .renraku-day-btn, .no-print, .modal-backdrop, #saCloudPanel {
+            #view-home, #view-tasks, #view-task-form, #view-renraku-settings, #view-renraku-edit, #view-renraku-history, .renraku-day-btn, .no-print, .modal-backdrop, #saCloudPanel {
                 display: none !important;
             }
             #view-detail, .print-section-only {
@@ -574,8 +574,22 @@
                 <span id="taskSummary" class="text-xs sm:text-sm font-bold bg-white/15 rounded-xl px-3 py-2">未完了 0件</span>
             </header>
 
+            <button type="button" onclick="openTaskForm()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-2xl px-5 py-3.5 text-base shadow transition touch-target">
+                <i class="fa-solid fa-plus"></i> タスクを追加
+            </button>
+
+            <div id="taskList" class="space-y-5"></div>
+        </div>
+
+        <!-- タスク追加・編集ビュー -->
+        <div id="view-task-form" class="hidden space-y-4">
+            <div class="flex items-center gap-3">
+                <button onclick="backToTaskList()" class="bg-white border-2 border-slate-300 text-slate-600 font-bold px-4 py-2.5 rounded-xl shadow-sm hover:bg-slate-50 transition flex items-center gap-2 touch-target">
+                    <i class="fa-solid fa-arrow-left"></i> 戻る
+                </button>
+                <h2 id="taskFormTitle" class="text-xl sm:text-2xl font-black text-slate-800"><i class="fa-solid fa-plus text-indigo-500"></i> タスクを追加</h2>
+            </div>
             <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-3">
-                <h3 id="taskFormTitle" class="font-bold text-lg text-slate-800"><i class="fa-solid fa-plus text-indigo-500"></i> タスクを追加</h3>
                 <input id="taskTitleInput" type="text" placeholder="何をしたいですか？" class="w-full text-lg font-bold text-slate-800 placeholder-slate-300 border-0 border-b-2 border-transparent focus:border-indigo-300 focus:outline-none px-1 py-2 bg-transparent">
                 <textarea id="taskMemoInput" rows="2" placeholder="説明" class="w-full text-sm text-slate-700 placeholder-slate-300 border-0 focus:outline-none px-1 py-1 bg-transparent resize-none"></textarea>
                 <div id="taskChips" class="hidden flex-wrap gap-1.5"></div>
@@ -636,8 +650,6 @@
                 </div>
                 <p id="taskCalStatus" class="text-xs text-slate-500"></p>
             </section>
-
-            <div id="taskList" class="space-y-5"></div>
         </div>
 
         <!-- 連絡帳 宿題の記録ビュー -->
@@ -1653,6 +1665,7 @@
             exitArchiveView();
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-task-form').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.add('hidden');
@@ -1662,6 +1675,7 @@
         function showDetailView() {
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-task-form').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.add('hidden');
             document.getElementById('view-detail').classList.remove('hidden');
@@ -1671,6 +1685,7 @@
         function showRenrakuSettings() {
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-task-form').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.add('hidden');
             document.getElementById('view-renraku-history').classList.add('hidden');
@@ -1679,6 +1694,7 @@
         }
 
         function showTasksView() {
+            document.getElementById('view-task-form').classList.add('hidden');
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.add('hidden');
@@ -1689,6 +1705,15 @@
             renderTasks();
             taskCalCheck();
         }
+
+        function openTaskForm() {
+            resetTaskForm();
+            document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-task-form').classList.remove('hidden');
+            const titleEl = document.getElementById('taskTitleInput');
+            if (titleEl) titleEl.focus();
+        }
+        function backToTaskList() { showTasksView(); }
 
         // ===== タスク管理 =====
         const TASKS_KEY = 'edu_tasks';
@@ -1987,6 +2012,7 @@
             saveTasks();
             renderTasks();
             resetTaskForm();
+            showTasksView();
             if (saved) taskCalSync(saved, 'upsert');
             showToast(wasEdit ? 'タスクを更新しました' : 'タスクを追加しました');
         }
@@ -2011,10 +2037,12 @@
             if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 更新する';
             const cancelBtn = document.getElementById('taskCancelEditBtn');
             if (cancelBtn) cancelBtn.classList.remove('hidden');
+            document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-task-form').classList.remove('hidden');
             const titleEl = document.getElementById('taskTitleInput');
             if (titleEl) titleEl.focus();
         }
-        function cancelTaskEdit() { resetTaskForm(); }
+        function cancelTaskEdit() { resetTaskForm(); showTasksView(); }
         function deleteTask(id) {
             const t = schoolTasks.find(x => x.id === id);
             if (!t) return;
