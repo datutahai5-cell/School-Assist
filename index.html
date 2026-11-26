@@ -673,6 +673,9 @@
                     <button id="toggleWeekendBtn" onclick="toggleWeekendDisplay()" class="bg-emerald-800 hover:bg-emerald-900 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 font-medium">
                         <i class="fa-solid fa-calendar-days text-emerald-300"></i> <span id="weekendToggleText">土日を表示</span>
                     </button>
+                    <button id="hwToggleBtn" onclick="toggleHandwritingMode()" class="bg-white/10 hover:bg-white/20 text-white font-bold px-3.5 py-1.5 rounded-lg transition flex items-center gap-1 border border-white/30">
+                        <i class="fa-solid fa-pen"></i> 手書き
+                    </button>
                     <button id="clearBtn" onclick="clearCurrentWeekSchedule()" class="bg-red-600/80 hover:bg-red-600 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
                         <i class="fa-solid fa-trash"></i> クリア
                     </button>
@@ -703,6 +706,7 @@
                     </div>
 
                     <!-- Schedule Table -->
+                    <div id="hwTableWrap" class="relative">
                     <table id="scheduleTable" class="w-full border-collapse border-2 border-slate-800 text-xs md:text-sm table-fixed">
                         <thead>
                             <tr id="headerRow" class="bg-slate-100 divide-x divide-slate-800 border-b-2 border-slate-800">
@@ -713,6 +717,8 @@
                             <!-- JS dynamically generates rows including 1-6 periods, 下校時間, and その他 -->
                         </tbody>
                     </table>
+                    <canvas id="handwritingCanvas" class="no-print" style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; touch-action:none; z-index:5;"></canvas>
+                    </div>
 
                     <!-- Footer: 持ち物＆連絡 / 今週の一言 -->
                     <div id="weekFooter" class="flex w-full border-2 border-t-0 border-slate-800 text-xs md:text-sm bg-white">
@@ -784,6 +790,16 @@
                 </div>
             </main>
         <!-- ふせんドック（画面右下に固定） -->
+        <div id="hwTools" class="hidden no-print fixed bottom-20 left-1/2 z-40 bg-white rounded-full shadow-xl border border-slate-300 px-3 py-2 flex items-center gap-2" style="transform: translateX(-50%);">
+            <button type="button" onclick="setHwColor('#1e293b', this)" class="hw-color-btn w-6 h-6 rounded-full border-2 border-amber-400 p-0" style="background:#1e293b;" title="黒"></button>
+            <button type="button" onclick="setHwColor('#2563eb', this)" class="hw-color-btn w-6 h-6 rounded-full border-2 border-slate-200 p-0" style="background:#2563eb;" title="青"></button>
+            <button type="button" onclick="setHwColor('#dc2626', this)" class="hw-color-btn w-6 h-6 rounded-full border-2 border-slate-200 p-0" style="background:#dc2626;" title="赤"></button>
+            <span class="w-px h-5 bg-slate-200"></span>
+            <button type="button" id="hwEraserBtn" onclick="toggleHwEraser()" class="text-xs font-bold px-2.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition"><i class="fa-solid fa-eraser mr-1"></i>消しゴム</button>
+            <button type="button" onclick="clearHandwriting()" class="text-xs font-bold px-2.5 py-1.5 rounded-full bg-slate-100 hover:bg-red-100 text-slate-600 hover:text-red-500 transition">全消し</button>
+            <button type="button" onclick="setHandwritingMode(false)" class="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition">終わる</button>
+        </div>
+
         <div id="sideNotesDock" class="hidden no-print fixed bottom-20 right-3 sm:right-4 z-40 flex flex-col items-end">
             <div id="sideNotePalette" class="hidden mb-2 bg-white rounded-2xl shadow-xl border border-slate-200 px-3 py-2 items-center gap-1.5">
                 <span class="text-[11px] font-bold text-slate-500 mr-0.5">色を選んで追加</span>
@@ -1606,6 +1622,7 @@
         }
 
         function showHomeView() {
+            setHandwritingMode(false);
             exitArchiveView();
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-tasks').classList.add('hidden');
@@ -1887,6 +1904,183 @@
                 }
             } catch (e) {}
         }
+
+        // ===== 週案への手書き =====
+        let handwritingMode = false;
+        let hwDrawing = false;
+        let hwCurrentStroke = null;
+        let hwEraserOn = false;
+        let hwColorValue = '#1e293b';
+        const HW_PEN_CSS_WIDTH = 3;
+
+        function setHandwritingMode(on) {
+            handwritingMode = !!on;
+            const canvas = document.getElementById('handwritingCanvas');
+            const tools = document.getElementById('hwTools');
+            const btn = document.getElementById('hwToggleBtn');
+            if (canvas) canvas.style.pointerEvents = handwritingMode ? 'auto' : 'none';
+            if (tools) tools.classList.toggle('hidden', !handwritingMode);
+            if (btn) {
+                btn.style.background = handwritingMode ? '#fcd34d' : '';
+                btn.style.color = handwritingMode ? '#1e293b' : '';
+            }
+            if (handwritingMode) updateHandwritingLayer();
+        }
+        function toggleHandwritingMode() {
+            if (!handwritingMode) {
+                const banner = document.getElementById('archiveViewBanner');
+                if (banner && !banner.classList.contains('hidden')) { showToast('アーカイブ表示中は手書きできません'); return; }
+                if (sidePanelOpen && !sidePanelPrintRestore) { showToast('パネルを閉じると手書きできます'); return; }
+            }
+            setHandwritingMode(!handwritingMode);
+        }
+        function setHwColor(color, btn) {
+            hwColorValue = color;
+            hwEraserOn = false;
+            const eraserBtn = document.getElementById('hwEraserBtn');
+            if (eraserBtn) { eraserBtn.classList.remove('bg-amber-200', 'text-amber-900'); eraserBtn.classList.add('bg-slate-100', 'text-slate-600'); }
+            document.querySelectorAll('.hw-color-btn').forEach(b => {
+                b.classList.remove('border-amber-400');
+                b.classList.add('border-slate-200');
+            });
+            if (btn) { btn.classList.remove('border-slate-200'); btn.classList.add('border-amber-400'); }
+        }
+        function toggleHwEraser() {
+            hwEraserOn = !hwEraserOn;
+            const eraserBtn = document.getElementById('hwEraserBtn');
+            if (eraserBtn) {
+                eraserBtn.classList.toggle('bg-amber-200', hwEraserOn);
+                eraserBtn.classList.toggle('text-amber-900', hwEraserOn);
+                eraserBtn.classList.toggle('bg-slate-100', !hwEraserOn);
+                eraserBtn.classList.toggle('text-slate-600', !hwEraserOn);
+            }
+        }
+        function clearHandwriting() {
+            if (!currentHandwriting.length) return;
+            if (!confirm('この週の手書きを全部消しますか？')) return;
+            currentHandwriting = [];
+            redrawHandwriting();
+            saveCurrentWeekData();
+        }
+        function updateHandwritingLayer() {
+            const canvas = document.getElementById('handwritingCanvas');
+            if (!canvas) return;
+            if (sidePanelOpen && !sidePanelPrintRestore) {
+                canvas.style.display = 'none';
+                if (handwritingMode) setHandwritingMode(false);
+                return;
+            }
+            canvas.style.display = '';
+            const w = canvas.clientWidth;
+            const h = canvas.clientHeight;
+            if (!w || !h) return;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.round(w * dpr);
+            canvas.height = Math.round(h * dpr);
+            redrawHandwriting();
+        }
+        function redrawHandwriting() {
+            const canvas = document.getElementById('handwritingCanvas');
+            if (!canvas || !canvas.width || !canvas.height) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            currentHandwriting.forEach(st => {
+                if (!st || !Array.isArray(st.pts) || !st.pts.length) return;
+                ctx.strokeStyle = st.c || '#1e293b';
+                ctx.fillStyle = st.c || '#1e293b';
+                ctx.lineWidth = Math.max(1, (st.w || 0.004) * canvas.width);
+                if (st.pts.length === 1) {
+                    ctx.beginPath();
+                    ctx.arc(st.pts[0][0] * canvas.width, st.pts[0][1] * canvas.height, ctx.lineWidth / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    return;
+                }
+                ctx.beginPath();
+                st.pts.forEach((pt, i) => {
+                    const x = pt[0] * canvas.width;
+                    const y = pt[1] * canvas.height;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            });
+        }
+        function hwPos(e) {
+            const canvas = document.getElementById('handwritingCanvas');
+            const r = canvas.getBoundingClientRect();
+            return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+        }
+        function hwRound(v) { return Math.round(v * 10000) / 10000; }
+        function hwDrawSegment(a, b, st) {
+            const canvas = document.getElementById('handwritingCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = st.c;
+            ctx.lineWidth = Math.max(1, st.w * canvas.width);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(a[0] * canvas.width, a[1] * canvas.height);
+            ctx.lineTo(b[0] * canvas.width, b[1] * canvas.height);
+            ctx.stroke();
+        }
+        function hwDrawDot(p, st) {
+            const canvas = document.getElementById('handwritingCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = st.c;
+            ctx.beginPath();
+            ctx.arc(p[0] * canvas.width, p[1] * canvas.height, Math.max(1, st.w * canvas.width) / 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        function hwEraseAt(p) {
+            const before = currentHandwriting.length;
+            const r2 = 0.02 * 0.02;
+            currentHandwriting = currentHandwriting.filter(st => !(st.pts || []).some(pt => {
+                const dx = pt[0] - p[0];
+                const dy = pt[1] - p[1];
+                return dx * dx + dy * dy < r2;
+            }));
+            if (currentHandwriting.length !== before) redrawHandwriting();
+        }
+        (function initHandwriting() {
+            const canvas = document.getElementById('handwritingCanvas');
+            if (!canvas) return;
+            canvas.addEventListener('pointerdown', e => {
+                if (!handwritingMode) return;
+                e.preventDefault();
+                try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+                const p = hwPos(e);
+                hwDrawing = true;
+                if (hwEraserOn) { hwEraseAt(p); return; }
+                hwCurrentStroke = { c: hwColorValue, w: HW_PEN_CSS_WIDTH / (canvas.clientWidth || 1), pts: [[hwRound(p[0]), hwRound(p[1])]] };
+                currentHandwriting.push(hwCurrentStroke);
+                hwDrawDot(p, hwCurrentStroke);
+            });
+            canvas.addEventListener('pointermove', e => {
+                if (!hwDrawing || !handwritingMode) return;
+                const p = hwPos(e);
+                if (hwEraserOn) { hwEraseAt(p); return; }
+                if (!hwCurrentStroke) return;
+                const pts = hwCurrentStroke.pts;
+                const last = pts[pts.length - 1];
+                const dx = p[0] - last[0];
+                const dy = p[1] - last[1];
+                if (dx * dx + dy * dy < 0.0015 * 0.0015) return;
+                const np = [hwRound(p[0]), hwRound(p[1])];
+                pts.push(np);
+                hwDrawSegment(last, np, hwCurrentStroke);
+            });
+            const endStroke = () => {
+                if (!hwDrawing) return;
+                hwDrawing = false;
+                hwCurrentStroke = null;
+                saveCurrentWeekData();
+            };
+            canvas.addEventListener('pointerup', endStroke);
+            canvas.addEventListener('pointercancel', endStroke);
+            window.addEventListener('resize', () => { updateHandwritingLayer(); });
+        })();
 
         // ===== 朝の連絡（連絡帳） =====
         const RENRAKU_TARGETS_KEY = 'edu_renraku_targets';
@@ -2379,9 +2573,11 @@
             if (bnEl) bnEl.value = savedData.bringNotes || '';
             if (wcEl) wcEl.value = savedData.weekComment || '';
             currentSideNotes = Array.isArray(savedData.sideNotes) ? JSON.parse(JSON.stringify(savedData.sideNotes)) : [];
+            currentHandwriting = Array.isArray(savedData.handwriting) ? JSON.parse(JSON.stringify(savedData.handwriting)) : [];
             renderSideNotes();
             footerLoadedForKey = getWeekKey(currentMonday);
             requestAnimationFrame(() => { fitFooterFonts(); syncFooterPrintText(); });
+            requestAnimationFrame(() => { updateHandwritingLayer(); });
             const dayNotes = loadDayNotes();
 
             let headerHtml = `<th class="w-20 md:w-24 p-2 text-center font-bold text-slate-700 bg-slate-200 border border-slate-800">時限/時間</th>`;
@@ -2740,6 +2936,7 @@
                 if (bnInput) existing.bringNotes = bnInput.value;
                 if (wcInput) existing.weekComment = wcInput.value;
                 existing.sideNotes = currentSideNotes;
+                existing.handwriting = currentHandwriting;
             }
 
             localStorage.setItem(key, JSON.stringify(existing));
@@ -2789,6 +2986,7 @@
         let sidePanelPrintRestore = false;
         const WEEK_SCHEDULE_LINKS_KEY = 'edu_week_schedule_links';
         let currentSideNotes = [];
+        let currentHandwriting = [];
 
         function loadWeekScheduleLinks() {
             try { return JSON.parse(localStorage.getItem(WEEK_SCHEDULE_LINKS_KEY) || '{}'); } catch (e) { return {}; }
