@@ -63,6 +63,34 @@
             -webkit-text-orientation: upright;
             letter-spacing: 0.2em;
         }
+
+        /* 週予定サイドパネルの三角タブ */
+        #sidePanelTab {
+            position: absolute;
+            right: 0;
+            top: 170px;
+            width: 30px;
+            height: 110px;
+            background: #059669;
+            color: #fff;
+            font-size: 15px;
+            clip-path: polygon(0 50%, 100% 0, 100% 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: right 0.25s ease;
+            border: none;
+            padding: 0 0 0 8px;
+        }
+        #sidePanelTab:hover { background: #10b981; }
+        #sidePanelTab.tab-open {
+            right: calc(min(430px, 44%) + 12px);
+            clip-path: polygon(100% 50%, 0 0, 0 100%);
+            padding: 0 8px 0 0;
+        }
+        #sidePanel { width: min(430px, 44%); }
         @media print {
             @page {
                 size: A4 portrait;
@@ -604,8 +632,10 @@
                 <span class="text-[11px] font-semibold text-amber-800 ml-auto">ホームへ戻ると今年度の表示に戻ります</span>
             </div>
 
-            <main class="w-full">
-                <div class="w-full bg-white rounded-2xl shadow-md border-2 border-slate-800 p-3 sm:p-4 print-container overflow-x-auto">
+            <main class="w-full relative">
+                <button id="sidePanelTab" onclick="toggleSidePanel()" title="週予定・メモを開く" class="no-print"><i class="fa-solid fa-caret-left"></i></button>
+                <div id="detailMainFlex" class="flex items-start gap-3 w-full">
+                <div class="w-full bg-white rounded-2xl shadow-md border-2 border-slate-800 p-3 sm:p-4 print-container overflow-x-auto flex-1 min-w-0">
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
                         <div class="flex items-center gap-3">
                             <input type="text" id="weekTitle" value="週案" oninput="saveCurrentWeekData()" class="font-bold text-lg md:text-xl text-slate-800 focus:bg-amber-50 px-2 py-0.5 rounded-lg border border-transparent hover:border-slate-300 focus:outline-none w-64">
@@ -658,6 +688,42 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Side panel: 週予定プレビュー＋メモ -->
+                <aside id="sidePanel" class="hidden no-print shrink-0 bg-white rounded-2xl shadow-md border-2 border-slate-800 p-3 sm:p-4">
+                    <div class="flex items-center justify-between bg-slate-100 rounded-xl px-1.5 py-1.5 mb-3">
+                        <button onclick="shiftSidePanelDay(-1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 font-bold" title="前の日"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                        <span id="sidePanelDayLabel" class="text-xs sm:text-sm font-bold text-slate-800"></span>
+                        <button onclick="shiftSidePanelDay(1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 font-bold" title="次の日"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                    </div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-calendar-week text-emerald-600 mr-1.5"></i>週予定</h3>
+                        <span id="sidePanelWeekLabel" class="text-[11px] font-bold text-slate-500"></span>
+                    </div>
+                    <div class="border border-slate-300 rounded-xl overflow-hidden bg-slate-50">
+                        <iframe id="sidePreviewFrame" class="w-full hidden bg-white" style="height:430px;" title="週予定プレビュー"></iframe>
+                        <div id="sidePreviewEmpty" class="p-4 text-xs text-slate-500 leading-relaxed">
+                            この週の週予定はまだ登録されていません。<br>
+                            ドライブの「週予定」フォルダにスキャンを入れると、毎朝7時に自動で登録されます。下の欄にリンクを貼っても表示できます。
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <a id="sideOpenDriveBtn" href="#" target="_blank" rel="noopener" class="hidden flex-1 text-center bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ドライブで開く</a>
+                        <button onclick="refreshSidePanel(true)" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-lg border border-slate-300 transition">再読み込み</button>
+                    </div>
+                    <div class="mt-3">
+                        <label class="text-[11px] font-bold text-slate-500">週予定のリンク（Googleドライブ）</label>
+                        <div class="flex gap-1.5 mt-1">
+                            <input id="sideLinkInput" type="text" placeholder="https://drive.google.com/file/d/..." class="flex-1 min-w-0 text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <button onclick="saveSidePanelLink()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">保存</button>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="text-[11px] font-bold text-slate-500">メモ（この週）</label>
+                        <textarea id="sideMemoInput" rows="8" oninput="saveCurrentWeekData()" placeholder="メモを書き込めます（週ごとに保存されます）" class="w-full mt-1 text-sm border border-slate-300 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-y leading-relaxed"></textarea>
+                    </div>
+                </aside>
                 </div>
             </main>
         </div>
@@ -1939,7 +2005,13 @@
                 }
             }
 
-            const daysToShow = showWeekend ? ALL_DAYS : ALL_DAYS.slice(0, 5);
+            const daysToShowAll = showWeekend ? ALL_DAYS : ALL_DAYS.slice(0, 5);
+            let daysToShow = daysToShowAll;
+            if (sidePanelOpen && !sidePanelPrintRestore) {
+                if (sidePanelFocusIdx >= daysToShowAll.length) sidePanelFocusIdx = daysToShowAll.length - 1;
+                if (sidePanelFocusIdx < 0) sidePanelFocusIdx = 0;
+                daysToShow = [daysToShowAll[sidePanelFocusIdx]];
+            }
             const sundayDate = new Date(currentMonday);
             sundayDate.setDate(currentMonday.getDate() + (showWeekend ? 6 : 4));
 
@@ -1964,6 +2036,8 @@
             const wcEl = document.getElementById('weekCommentInput');
             if (bnEl) bnEl.value = savedData.bringNotes || '';
             if (wcEl) wcEl.value = savedData.weekComment || '';
+            const smEl = document.getElementById('sideMemoInput');
+            if (smEl) smEl.value = savedData.sideMemo || '';
             footerLoadedForKey = getWeekKey(currentMonday);
             requestAnimationFrame(() => { fitFooterFonts(); syncFooterPrintText(); });
             const dayNotes = loadDayNotes();
@@ -1975,7 +2049,7 @@
 
             daysToShow.forEach((day, idx) => {
                 const d = new Date(currentMonday);
-                d.setDate(currentMonday.getDate() + idx);
+                d.setDate(currentMonday.getDate() + ALL_DAYS.findIndex(dd => dd.key === day.key));
                 const m = d.getMonth() + 1;
                 const dateNum = d.getDate();
                 const dateKey = getDateKey(d);
@@ -2266,6 +2340,8 @@
 
                 tbody.appendChild(tr);
             });
+
+            if (sidePanelOpen) refreshSidePanel();
         }
 
         function loadCurrentWeekData() {
@@ -2317,6 +2393,8 @@
                 const wcInput = document.getElementById('weekCommentInput');
                 if (bnInput) existing.bringNotes = bnInput.value;
                 if (wcInput) existing.weekComment = wcInput.value;
+                const smInput = document.getElementById('sideMemoInput');
+                if (smInput) existing.sideMemo = smInput.value;
             }
 
             localStorage.setItem(key, JSON.stringify(existing));
@@ -2359,6 +2437,139 @@
         }
 
         window.addEventListener('beforeprint', () => { fitFooterFonts(); syncFooterPrintText(); });
+
+        // ===== 週予定サイドパネル（三角タブ） =====
+        let sidePanelOpen = false;
+        let sidePanelFocusIdx = 0;
+        let sidePanelPrintRestore = false;
+        const WEEK_SCHEDULE_LINKS_KEY = 'edu_week_schedule_links';
+
+        function loadWeekScheduleLinks() {
+            try { return JSON.parse(localStorage.getItem(WEEK_SCHEDULE_LINKS_KEY) || '{}'); } catch (e) { return {}; }
+        }
+
+        function extractDriveFileId(url) {
+            if (!url) return '';
+            const s = String(url).trim();
+            const m = s.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            if (m) return m[1];
+            if (/^[a-zA-Z0-9_-]{10,}$/.test(s)) return s;
+            return '';
+        }
+
+        function drivePreviewUrl(url) {
+            const id = extractDriveFileId(url);
+            return id ? `https://drive.google.com/file/d/${id}/preview` : '';
+        }
+
+        function driveOpenUrl(url) {
+            const id = extractDriveFileId(url);
+            return id ? `https://drive.google.com/file/d/${id}/view` : (url || '');
+        }
+
+        function sidePanelBaseDays() {
+            return showWeekend ? ALL_DAYS : ALL_DAYS.slice(0, 5);
+        }
+
+        function sidePanelFocusDate() {
+            const base = sidePanelBaseDays();
+            const idx = Math.min(Math.max(sidePanelFocusIdx, 0), base.length - 1);
+            const day = base[idx];
+            const d = new Date(currentMonday);
+            d.setDate(currentMonday.getDate() + ALL_DAYS.findIndex(dd => dd.key === day.key));
+            return { day, date: d };
+        }
+
+        function toggleSidePanel() {
+            sidePanelOpen = !sidePanelOpen;
+            if (sidePanelOpen) {
+                const base = sidePanelBaseDays();
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                let idx = 0;
+                base.forEach((day, i) => {
+                    const d = new Date(currentMonday);
+                    d.setDate(currentMonday.getDate() + ALL_DAYS.findIndex(dd => dd.key === day.key));
+                    if (d.getTime() === today.getTime()) idx = i;
+                });
+                sidePanelFocusIdx = idx;
+            }
+            applySidePanelVisibility();
+            renderScheduleTable();
+        }
+
+        function applySidePanelVisibility() {
+            const panel = document.getElementById('sidePanel');
+            const tab = document.getElementById('sidePanelTab');
+            if (panel) panel.classList.toggle('hidden', !sidePanelOpen);
+            if (tab) {
+                tab.classList.toggle('tab-open', sidePanelOpen);
+                tab.innerHTML = sidePanelOpen ? '<i class="fa-solid fa-caret-right"></i>' : '<i class="fa-solid fa-caret-left"></i>';
+                tab.title = sidePanelOpen ? '週予定・メモを閉じる' : '週予定・メモを開く';
+            }
+        }
+
+        function shiftSidePanelDay(delta) {
+            const base = sidePanelBaseDays();
+            sidePanelFocusIdx = Math.min(base.length - 1, Math.max(0, sidePanelFocusIdx + delta));
+            renderScheduleTable();
+        }
+
+        function refreshSidePanel(forceReload) {
+            if (!sidePanelOpen) return;
+            const links = loadWeekScheduleLinks();
+            const url = links[getDateKey(currentMonday)] || '';
+            const frame = document.getElementById('sidePreviewFrame');
+            const empty = document.getElementById('sidePreviewEmpty');
+            const openBtn = document.getElementById('sideOpenDriveBtn');
+            const input = document.getElementById('sideLinkInput');
+            const weekLabel = document.getElementById('sidePanelWeekLabel');
+            const dayLabel = document.getElementById('sidePanelDayLabel');
+            if (input && document.activeElement !== input) input.value = url;
+            if (weekLabel) {
+                const fri = new Date(currentMonday);
+                fri.setDate(currentMonday.getDate() + 4);
+                weekLabel.textContent = `${currentMonday.getMonth() + 1}/${currentMonday.getDate()} 〜 ${fri.getMonth() + 1}/${fri.getDate()}`;
+            }
+            if (dayLabel) {
+                const f = sidePanelFocusDate();
+                dayLabel.textContent = `${f.date.getMonth() + 1}月${f.date.getDate()}日（${f.day.label}）`;
+            }
+            const preview = drivePreviewUrl(url);
+            if (frame && empty) {
+                if (preview) {
+                    if (forceReload || frame.getAttribute('src') !== preview) frame.src = preview;
+                    frame.classList.remove('hidden');
+                    empty.classList.add('hidden');
+                } else {
+                    frame.removeAttribute('src');
+                    frame.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                }
+            }
+            if (openBtn) {
+                if (preview) { openBtn.href = driveOpenUrl(url); openBtn.classList.remove('hidden'); }
+                else openBtn.classList.add('hidden');
+            }
+        }
+
+        function saveSidePanelLink() {
+            const input = document.getElementById('sideLinkInput');
+            if (!input) return;
+            const links = loadWeekScheduleLinks();
+            const key = getDateKey(currentMonday);
+            const v = (input.value || '').trim();
+            if (v) links[key] = v; else delete links[key];
+            localStorage.setItem(WEEK_SCHEDULE_LINKS_KEY, JSON.stringify(links));
+            refreshSidePanel(true);
+            showToast(v ? '週予定のリンクを保存しました' : '週予定のリンクを削除しました');
+        }
+
+        window.addEventListener('beforeprint', () => {
+            if (sidePanelOpen) { sidePanelPrintRestore = true; renderScheduleTable(); }
+        });
+        window.addEventListener('afterprint', () => {
+            if (sidePanelPrintRestore) { sidePanelPrintRestore = false; renderScheduleTable(); }
+        });
 
         function bringNotesKeydown(e) {
             if (e.isComposing || e.key !== 'Enter') return;
