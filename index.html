@@ -634,7 +634,7 @@
 
             <main class="w-full relative">
                 <button id="sidePanelTab" onclick="toggleSidePanel()" title="週予定・メモを開く" class="no-print"><i class="fa-solid fa-caret-left"></i></button>
-                <div id="detailMainFlex" class="flex items-start gap-3 w-full">
+                <div id="detailMainFlex" class="flex items-stretch gap-3 w-full">
                 <div class="w-full bg-white rounded-2xl shadow-md border-2 border-slate-800 p-3 sm:p-4 print-container overflow-x-auto flex-1 min-w-0">
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-200">
                         <div class="flex items-center gap-3">
@@ -702,9 +702,9 @@
                         <h3 class="font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-calendar-week text-emerald-600 mr-1.5"></i>週予定</h3>
                         <span id="sidePanelWeekLabel" class="text-[11px] font-bold text-slate-500"></span>
                     </div>
-                    <div class="border border-slate-300 rounded-xl overflow-hidden bg-slate-50" style="width:min(430px,100%)">
-                        <iframe id="sidePreviewFrame" class="w-full hidden bg-white" style="height:380px;" title="週予定プレビュー"></iframe>
-                        <div id="sidePreviewEmpty" class="p-4 text-xs text-slate-500 leading-relaxed">
+                    <div class="border border-slate-300 rounded-xl overflow-hidden bg-slate-50 flex-1 flex flex-col" style="width:min(430px,100%); min-height:320px;">
+                        <iframe id="sidePreviewFrame" class="w-full hidden bg-white flex-1 min-h-0" title="週予定プレビュー"></iframe>
+                        <div id="sidePreviewEmpty" class="p-4 text-xs text-slate-500 leading-relaxed flex-1">
                             この週の週予定はまだ登録されていません。<br>
                             ドライブの「R8 週予定」フォルダにスキャンを入れると、毎朝7時に自動で登録されます。下の欄にリンクを貼っても表示できます。
                         </div>
