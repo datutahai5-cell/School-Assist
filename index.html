@@ -2598,7 +2598,8 @@
                     <button type="button" onclick="deleteSideNote('${note.id}')" class="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-amber-200/80 hover:bg-amber-300 text-amber-800 text-[10px]" title="ふせんを消す"><i class="fa-solid fa-xmark"></i></button>
                     <textarea rows="3" oninput="updateSideNoteText('${note.id}', this.value)" placeholder="メモを書く" class="w-full bg-transparent text-[13px] leading-relaxed text-slate-800 placeholder-amber-700/40 focus:outline-none resize-y pr-5">${escapeHtml(note.text || '')}</textarea>
                     <div class="flex flex-wrap gap-1 mt-1">${links}</div>
-                    <div class="flex gap-1 mt-2">
+                    <button type="button" onclick="toggleSideNoteLinkForm('${note.id}', this)" class="text-[10px] font-bold text-amber-700/70 hover:text-amber-900 mt-1.5"><i class="fa-solid fa-paperclip mr-0.5"></i>リンクを添付</button>
+                    <div id="sn-form-${note.id}" class="hidden gap-1 mt-1.5">
                         <input id="sn-url-${note.id}" type="text" placeholder="資料のリンク（ドライブ等）" class="flex-1 min-w-0 text-[11px] bg-white/80 border border-amber-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400">
                         <input id="sn-label-${note.id}" type="text" placeholder="名前" class="w-16 shrink-0 text-[11px] bg-white/80 border border-amber-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400">
                         <button type="button" onclick="addSideNoteLink('${note.id}')" class="bg-amber-400 hover:bg-amber-300 text-amber-900 text-[11px] font-bold px-2 py-1 rounded transition shrink-0">添付</button>
@@ -2622,6 +2623,21 @@
         function updateSideNoteText(id, value) {
             const note = currentSideNotes.find(n => n.id === id);
             if (note) { note.text = value; saveCurrentWeekData(); }
+        }
+
+        function toggleSideNoteLinkForm(id, btn) {
+            const form = document.getElementById('sn-form-' + id);
+            if (!form) return;
+            const show = form.classList.contains('hidden');
+            form.classList.toggle('hidden', !show);
+            form.classList.toggle('flex', show);
+            if (btn) btn.innerHTML = show
+                ? '<i class="fa-solid fa-chevron-up mr-0.5"></i>とじる'
+                : '<i class="fa-solid fa-paperclip mr-0.5"></i>リンクを添付';
+            if (show) {
+                const inp = document.getElementById('sn-url-' + id);
+                if (inp) inp.focus();
+            }
         }
 
         function addSideNoteLink(id) {
