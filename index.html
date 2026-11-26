@@ -709,9 +709,9 @@
                             ドライブの「R8 週予定」フォルダにスキャンを入れると、毎朝7時に自動で登録されます。下の欄にリンクを貼っても表示できます。
                         </div>
                     </div>
-                    <div class="flex gap-2 mt-2">
+                    <div class="flex gap-2 mt-2 items-center">
                         <a id="sideOpenDriveBtn" href="#" target="_blank" rel="noopener" class="hidden flex-1 text-center bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">ドライブで開く</a>
-                        <button onclick="refreshSidePanel(true)" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-lg border border-slate-300 transition">再読み込み</button>
+                        <button onclick="refreshSidePanel(true)" title="再読み込み" class="shrink-0 ml-auto w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 text-[11px] rounded-md border border-slate-300 transition"><i class="fa-solid fa-rotate-right"></i></button>
                     </div>
                     <div class="mt-3">
                         <label class="text-[11px] font-bold text-slate-500">週予定のリンク（Googleドライブ）</label>
@@ -719,10 +719,6 @@
                             <input id="sideLinkInput" type="text" placeholder="https://drive.google.com/file/d/..." class="flex-1 min-w-0 text-xs border border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                             <button onclick="saveSidePanelLink()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">保存</button>
                         </div>
-                    </div>
-                    <div class="mt-4">
-                        <label class="text-[11px] font-bold text-slate-500">メモ（この週）</label>
-                        <textarea id="sideMemoInput" rows="5" oninput="saveCurrentWeekData()" placeholder="メモを書き込めます（週ごとに保存されます）" class="w-full mt-1 text-sm border border-slate-300 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-y leading-relaxed"></textarea>
                     </div>
                     <div class="mt-auto pt-4">
                         <div class="flex items-center justify-between mb-2 border-t border-dashed border-slate-200 pt-3">
@@ -2059,8 +2055,6 @@
             const wcEl = document.getElementById('weekCommentInput');
             if (bnEl) bnEl.value = savedData.bringNotes || '';
             if (wcEl) wcEl.value = savedData.weekComment || '';
-            const smEl = document.getElementById('sideMemoInput');
-            if (smEl) smEl.value = savedData.sideMemo || '';
             currentSideNotes = Array.isArray(savedData.sideNotes) ? JSON.parse(JSON.stringify(savedData.sideNotes)) : [];
             renderSideNotes();
             footerLoadedForKey = getWeekKey(currentMonday);
@@ -2422,8 +2416,6 @@
                 const wcInput = document.getElementById('weekCommentInput');
                 if (bnInput) existing.bringNotes = bnInput.value;
                 if (wcInput) existing.weekComment = wcInput.value;
-                const smInput = document.getElementById('sideMemoInput');
-                if (smInput) existing.sideMemo = smInput.value;
                 existing.sideNotes = currentSideNotes;
             }
 
