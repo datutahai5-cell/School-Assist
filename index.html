@@ -728,8 +728,17 @@
                 </div>
             </main>
         <!-- ふせんドック（画面右下に固定） -->
-        <div id="sideNotesDock" class="hidden no-print fixed bottom-20 right-3 sm:right-4 z-40">
-            <button onclick="addSideNote()" class="bg-amber-300 hover:bg-amber-200 text-amber-900 text-xs font-bold px-3 py-2 rounded-lg shadow-lg transition" style="transform: rotate(-1.5deg);">＋ ふせんを追加</button>
+        <div id="sideNotesDock" class="hidden no-print fixed bottom-20 right-3 sm:right-4 z-40 flex flex-col items-end">
+            <div id="sideNotePalette" class="hidden mb-2 bg-white rounded-2xl shadow-xl border border-slate-200 px-3 py-2 items-center gap-1.5">
+                <span class="text-[11px] font-bold text-slate-500 mr-0.5">色を選んで追加</span>
+                <button type="button" onclick="addSideNote('yellow')" title="黄色" class="w-7 h-7 rounded-full border border-amber-300 bg-amber-200 hover:scale-110 transition"></button>
+                <button type="button" onclick="addSideNote('pink')" title="ピンク" class="w-7 h-7 rounded-full border border-pink-300 bg-pink-200 hover:scale-110 transition"></button>
+                <button type="button" onclick="addSideNote('blue')" title="水色" class="w-7 h-7 rounded-full border border-sky-300 bg-sky-200 hover:scale-110 transition"></button>
+                <button type="button" onclick="addSideNote('green')" title="緑色" class="w-7 h-7 rounded-full border border-emerald-300 bg-emerald-200 hover:scale-110 transition"></button>
+                <button type="button" onclick="addSideNote('orange')" title="オレンジ" class="w-7 h-7 rounded-full border border-orange-300 bg-orange-200 hover:scale-110 transition"></button>
+                <button type="button" onclick="addSideNote('purple')" title="紫色" class="w-7 h-7 rounded-full border border-violet-300 bg-violet-200 hover:scale-110 transition"></button>
+            </div>
+            <button onclick="toggleSideNotePalette()" class="bg-amber-300 hover:bg-amber-200 text-amber-900 text-xs font-bold px-3 py-2 rounded-lg shadow-lg transition" style="transform: rotate(-1.5deg);">＋ ふせんを追加</button>
         </div>
         </div>
 
@@ -2582,29 +2591,42 @@
             try { return new URL(url).hostname; } catch (e) { return url; }
         }
 
+        const NOTE_COLOR_STYLES = {
+            yellow: { card: 'bg-amber-100 border-amber-200', btn: 'bg-amber-200/80 hover:bg-amber-300 text-amber-800', chipBorder: 'border-amber-300', input: 'border-amber-300 focus:ring-amber-400', attach: 'bg-amber-400 hover:bg-amber-300 text-amber-900', titleBorder: 'border-amber-300/60', placeholder: 'placeholder-amber-700/40' },
+            pink: { card: 'bg-pink-100 border-pink-200', btn: 'bg-pink-200/80 hover:bg-pink-300 text-pink-800', chipBorder: 'border-pink-300', input: 'border-pink-300 focus:ring-pink-400', attach: 'bg-pink-400 hover:bg-pink-300 text-pink-900', titleBorder: 'border-pink-300/60', placeholder: 'placeholder-pink-700/40' },
+            blue: { card: 'bg-sky-100 border-sky-200', btn: 'bg-sky-200/80 hover:bg-sky-300 text-sky-800', chipBorder: 'border-sky-300', input: 'border-sky-300 focus:ring-sky-400', attach: 'bg-sky-400 hover:bg-sky-300 text-sky-900', titleBorder: 'border-sky-300/60', placeholder: 'placeholder-sky-700/40' },
+            green: { card: 'bg-emerald-100 border-emerald-200', btn: 'bg-emerald-200/80 hover:bg-emerald-300 text-emerald-800', chipBorder: 'border-emerald-300', input: 'border-emerald-300 focus:ring-emerald-400', attach: 'bg-emerald-400 hover:bg-emerald-300 text-emerald-900', titleBorder: 'border-emerald-300/60', placeholder: 'placeholder-emerald-700/40' },
+            orange: { card: 'bg-orange-100 border-orange-200', btn: 'bg-orange-200/80 hover:bg-orange-300 text-orange-800', chipBorder: 'border-orange-300', input: 'border-orange-300 focus:ring-orange-400', attach: 'bg-orange-400 hover:bg-orange-300 text-orange-900', titleBorder: 'border-orange-300/60', placeholder: 'placeholder-orange-700/40' },
+            purple: { card: 'bg-violet-100 border-violet-200', btn: 'bg-violet-200/80 hover:bg-violet-300 text-violet-800', chipBorder: 'border-violet-300', input: 'border-violet-300 focus:ring-violet-400', attach: 'bg-violet-400 hover:bg-violet-300 text-violet-900', titleBorder: 'border-violet-300/60', placeholder: 'placeholder-violet-700/40' }
+        };
+        function sideNoteColorStyle(note) {
+            return NOTE_COLOR_STYLES[(note && note.color) || 'yellow'] || NOTE_COLOR_STYLES.yellow;
+        }
+
         function renderSideNotes() {
             const wrap = document.getElementById('sideNotesWrap');
             const empty = document.getElementById('sideNotesEmpty');
             if (!wrap) return;
             if (empty) empty.style.display = currentSideNotes.length ? 'none' : '';
             wrap.innerHTML = currentSideNotes.map((note) => {
+                const c = sideNoteColorStyle(note);
                 const links = (note.links || []).map((lnk, li) => `
-                    <span class="inline-flex items-center gap-1 bg-white/80 border border-amber-300 rounded-full pl-2 pr-1 py-0.5 text-[11px] font-bold text-slate-700 max-w-full">
-                        <a href="${escapeHtml(lnk.url)}" target="_blank" rel="noopener" class="truncate hover:underline"><i class="fa-solid fa-paperclip text-amber-600 mr-0.5"></i>${escapeHtml(sideNoteLinkLabel(lnk.url, lnk.label))}</a>
-                        <button type="button" onclick="removeSideNoteLink('${note.id}', ${li})" class="w-4 h-4 flex items-center justify-center rounded-full bg-amber-200 hover:bg-amber-300 text-amber-800 text-[9px] shrink-0" title="リンクを外す"><i class="fa-solid fa-xmark"></i></button>
+                    <span class="inline-flex items-center gap-1 bg-white/80 border ${c.chipBorder} rounded-full pl-2 pr-1 py-0.5 text-[11px] font-bold text-slate-700 max-w-full">
+                        <a href="${escapeHtml(lnk.url)}" target="_blank" rel="noopener" class="truncate hover:underline"><i class="fa-solid fa-paperclip text-slate-500 mr-0.5"></i>${escapeHtml(sideNoteLinkLabel(lnk.url, lnk.label))}</a>
+                        <button type="button" onclick="removeSideNoteLink('${note.id}', ${li})" class="w-4 h-4 flex items-center justify-center rounded-full ${c.btn} text-[9px] shrink-0" title="リンクを外す"><i class="fa-solid fa-xmark"></i></button>
                     </span>`).join('');
                 return `
-                <div class="bg-amber-100 border border-amber-200 rounded-md shadow-md p-2.5 relative flex-1 min-w-[15rem] max-w-full" style="background-image: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 40%);">
-                    <button type="button" onclick="deleteSideNote('${note.id}')" class="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-amber-200/80 hover:bg-amber-300 text-amber-800 text-[10px]" title="ふせんを消す"><i class="fa-solid fa-xmark"></i></button>
-                    <textarea rows="1" oninput="updateSideNoteTitle('${note.id}', this.value); autoGrowSideNoteTitle(this);" placeholder="見出し" class="sn-title w-full bg-transparent font-bold text-[14px] leading-snug text-slate-800 placeholder-amber-700/40 focus:outline-none pr-12 border-b border-amber-300/60 pb-1 mb-1 resize-none overflow-hidden">${escapeHtml(note.title || '')}</textarea>
-                    <textarea rows="2" oninput="updateSideNoteText('${note.id}', this.value); autoGrowSideNoteTitle(this);" placeholder="内容を書く" class="sn-body w-full bg-transparent text-[13px] leading-relaxed text-slate-800 placeholder-amber-700/40 focus:outline-none resize-none overflow-hidden pr-12">${escapeHtml(note.text || '')}</textarea>
+                <div class="${c.card} border rounded-md shadow-md p-2.5 relative flex-1 min-w-[15rem] max-w-full" style="background-image: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 40%);">
+                    <button type="button" onclick="deleteSideNote('${note.id}')" class="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full ${c.btn} text-[10px]" title="ふせんを消す"><i class="fa-solid fa-xmark"></i></button>
+                    <textarea rows="1" oninput="updateSideNoteTitle('${note.id}', this.value); autoGrowSideNoteTitle(this);" placeholder="見出し" class="sn-title w-full bg-transparent font-bold text-[14px] leading-snug text-slate-800 ${c.placeholder} focus:outline-none pr-12 border-b ${c.titleBorder} pb-1 mb-1 resize-none overflow-hidden">${escapeHtml(note.title || '')}</textarea>
+                    <textarea rows="2" oninput="updateSideNoteText('${note.id}', this.value); autoGrowSideNoteTitle(this);" placeholder="内容を書く" class="sn-body w-full bg-transparent text-[13px] leading-relaxed text-slate-800 ${c.placeholder} focus:outline-none resize-none overflow-hidden pr-12">${escapeHtml(note.text || '')}</textarea>
                     <div class="flex flex-wrap gap-1 mt-1">${links}</div>
                     <div id="sn-form-${note.id}" class="hidden gap-1 mt-1.5">
-                        <input id="sn-url-${note.id}" type="text" placeholder="資料のリンク（ドライブ等）" class="flex-1 min-w-0 text-[11px] bg-white/80 border border-amber-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400">
-                        <input id="sn-label-${note.id}" type="text" placeholder="名前" class="w-16 shrink-0 text-[11px] bg-white/80 border border-amber-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400">
-                        <button type="button" onclick="addSideNoteLink('${note.id}')" class="bg-amber-400 hover:bg-amber-300 text-amber-900 text-[11px] font-bold px-2 py-1 rounded transition shrink-0">添付</button>
+                        <input id="sn-url-${note.id}" type="text" placeholder="資料のリンク（ドライブ等）" class="flex-1 min-w-0 text-[11px] bg-white/80 border ${c.input} rounded px-1.5 py-1 focus:outline-none focus:ring-1">
+                        <input id="sn-label-${note.id}" type="text" placeholder="名前" class="w-16 shrink-0 text-[11px] bg-white/80 border ${c.input} rounded px-1.5 py-1 focus:outline-none focus:ring-1">
+                        <button type="button" onclick="addSideNoteLink('${note.id}')" class="${c.attach} text-[11px] font-bold px-2 py-1 rounded transition shrink-0">添付</button>
                     </div>
-                    <button type="button" onclick="toggleSideNoteLinkForm('${note.id}', this)" title="リンクを添付" class="absolute top-1.5 right-8 w-5 h-5 flex items-center justify-center rounded-full bg-amber-200/70 hover:bg-amber-300 text-amber-800/80 text-[10px] transition"><i class="fa-solid fa-paperclip"></i></button>
+                    <button type="button" onclick="toggleSideNoteLinkForm('${note.id}', this)" title="リンクを添付" class="absolute top-1.5 right-8 w-5 h-5 flex items-center justify-center rounded-full ${c.btn} text-[10px] transition"><i class="fa-solid fa-paperclip"></i></button>
                 </div>`;
             }).join('');
             wrap.querySelectorAll('.sn-title, .sn-body').forEach(el => autoGrowSideNoteTitle(el));
@@ -2616,10 +2638,26 @@
             el.style.height = el.scrollHeight + 'px';
         }
 
-        function addSideNote() {
-            currentSideNotes.push({ id: 'n' + Date.now().toString(36), title: '', text: '', links: [] });
+        function toggleSideNotePalette() {
+            const pal = document.getElementById('sideNotePalette');
+            if (!pal) return;
+            const show = pal.classList.contains('hidden');
+            pal.classList.toggle('hidden', !show);
+            pal.classList.toggle('flex', show);
+        }
+
+        function addSideNote(colorKey) {
+            currentSideNotes.push({ id: 'n' + Date.now().toString(36), title: '', text: '', links: [], color: NOTE_COLOR_STYLES[colorKey] ? colorKey : 'yellow' });
             renderSideNotes();
             saveCurrentWeekData();
+            const pal = document.getElementById('sideNotePalette');
+            if (pal) { pal.classList.add('hidden'); pal.classList.remove('flex'); }
+            const wrap = document.getElementById('sideNotesWrap');
+            if (wrap) {
+                const titles = wrap.querySelectorAll('.sn-title');
+                const last = titles[titles.length - 1];
+                if (last) last.focus();
+            }
         }
 
         function deleteSideNote(id) {
