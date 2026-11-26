@@ -2022,6 +2022,11 @@
                 if (sidePanelFocusIdx < 0) sidePanelFocusIdx = 0;
                 daysToShow = [daysToShowAll[sidePanelFocusIdx]];
             }
+            const panelModeActive = sidePanelOpen && !sidePanelPrintRestore;
+            if (modeInfoDisplay) modeInfoDisplay.style.display = panelModeActive ? 'none' : '';
+            const weekFooterEl = document.getElementById('weekFooter');
+            if (weekFooterEl) weekFooterEl.style.display = panelModeActive ? 'none' : '';
+
             const sundayDate = new Date(currentMonday);
             sundayDate.setDate(currentMonday.getDate() + (showWeekend ? 6 : 4));
 
@@ -2160,6 +2165,10 @@
             tbody.appendChild(eventTr);
 
             periodRows.forEach((pRow, rIdx) => {
+                // パネル表示中は「その他」以降の行を出さない（週案を大きく見せるため）
+                if (panelModeActive && (pRow.id.startsWith('other') || pRow.id === 'dismissal')) {
+                    return;
+                }
                 const tr = document.createElement('tr');
                 tr.className = "divide-x divide-slate-800 border-b border-slate-800";
                 if (pRow.id.startsWith('other')) tr.classList.add('no-print-row');
