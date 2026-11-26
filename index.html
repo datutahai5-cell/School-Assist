@@ -86,11 +86,11 @@
         }
         #sidePanelTab:hover { background: #10b981; }
         #sidePanelTab.tab-open {
-            right: calc(min(430px, 44%) + 12px);
+            right: calc(min(900px, 63%) + 12px);
             clip-path: polygon(100% 50%, 0 0, 0 100%);
             padding: 0 8px 0 0;
         }
-        #sidePanel { width: min(430px, 44%); }
+        #sidePanel { width: min(900px, 63%); }
         @media print {
             @page {
                 size: A4 portrait;
@@ -692,6 +692,7 @@
 
                 <!-- Side panel: 週予定プレビュー＋メモ -->
                 <aside id="sidePanel" class="hidden no-print shrink-0 bg-white rounded-2xl shadow-md border-2 border-slate-800 p-3 sm:p-4">
+                  <div class="flex flex-col h-full">
                     <div class="flex items-center justify-between bg-slate-100 rounded-xl px-1.5 py-1.5 mb-3">
                         <button onclick="shiftSidePanelDay(-1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 font-bold" title="前の日"><i class="fa-solid fa-chevron-left text-xs"></i></button>
                         <span id="sidePanelDayLabel" class="text-xs sm:text-sm font-bold text-slate-800"></span>
@@ -701,8 +702,8 @@
                         <h3 class="font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-calendar-week text-emerald-600 mr-1.5"></i>週予定</h3>
                         <span id="sidePanelWeekLabel" class="text-[11px] font-bold text-slate-500"></span>
                     </div>
-                    <div class="border border-slate-300 rounded-xl overflow-hidden bg-slate-50">
-                        <iframe id="sidePreviewFrame" class="w-full hidden bg-white" style="height:430px;" title="週予定プレビュー"></iframe>
+                    <div class="border border-slate-300 rounded-xl overflow-hidden bg-slate-50" style="width:min(430px,100%)">
+                        <iframe id="sidePreviewFrame" class="w-full hidden bg-white" style="height:380px;" title="週予定プレビュー"></iframe>
                         <div id="sidePreviewEmpty" class="p-4 text-xs text-slate-500 leading-relaxed">
                             この週の週予定はまだ登録されていません。<br>
                             ドライブの「R8 週予定」フォルダにスキャンを入れると、毎朝7時に自動で登録されます。下の欄にリンクを貼っても表示できます。
@@ -721,8 +722,17 @@
                     </div>
                     <div class="mt-4">
                         <label class="text-[11px] font-bold text-slate-500">メモ（この週）</label>
-                        <textarea id="sideMemoInput" rows="8" oninput="saveCurrentWeekData()" placeholder="メモを書き込めます（週ごとに保存されます）" class="w-full mt-1 text-sm border border-slate-300 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-y leading-relaxed"></textarea>
+                        <textarea id="sideMemoInput" rows="5" oninput="saveCurrentWeekData()" placeholder="メモを書き込めます（週ごとに保存されます）" class="w-full mt-1 text-sm border border-slate-300 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 resize-y leading-relaxed"></textarea>
                     </div>
+                    <div class="mt-auto pt-4">
+                        <div class="flex items-center justify-between mb-2 border-t border-dashed border-slate-200 pt-3">
+                            <h3 class="font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-note-sticky text-amber-500 mr-1.5"></i>ふせん</h3>
+                            <button onclick="addSideNote()" class="bg-amber-300 hover:bg-amber-200 text-amber-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow transition" style="transform: rotate(-1.5deg);">＋ ふせんを追加</button>
+                        </div>
+                        <div id="sideNotesWrap" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                        <p id="sideNotesEmpty" class="text-[11px] text-slate-400 leading-relaxed">ふせんはまだありません。「＋ ふせんを追加」で、その週に貼っておきたいメモや、Googleドライブの資料リンクを残せます。</p>
+                    </div>
+                  </div>
                 </aside>
                 </div>
             </main>
@@ -2038,6 +2048,8 @@
             if (wcEl) wcEl.value = savedData.weekComment || '';
             const smEl = document.getElementById('sideMemoInput');
             if (smEl) smEl.value = savedData.sideMemo || '';
+            currentSideNotes = Array.isArray(savedData.sideNotes) ? JSON.parse(JSON.stringify(savedData.sideNotes)) : [];
+            renderSideNotes();
             footerLoadedForKey = getWeekKey(currentMonday);
             requestAnimationFrame(() => { fitFooterFonts(); syncFooterPrintText(); });
             const dayNotes = loadDayNotes();
@@ -2395,6 +2407,7 @@
                 if (wcInput) existing.weekComment = wcInput.value;
                 const smInput = document.getElementById('sideMemoInput');
                 if (smInput) existing.sideMemo = smInput.value;
+                existing.sideNotes = currentSideNotes;
             }
 
             localStorage.setItem(key, JSON.stringify(existing));
@@ -2443,6 +2456,7 @@
         let sidePanelFocusIdx = 0;
         let sidePanelPrintRestore = false;
         const WEEK_SCHEDULE_LINKS_KEY = 'edu_week_schedule_links';
+        let currentSideNotes = [];
 
         function loadWeekScheduleLinks() {
             try { return JSON.parse(localStorage.getItem(WEEK_SCHEDULE_LINKS_KEY) || '{}'); } catch (e) { return {}; }
@@ -2550,6 +2564,77 @@
                 if (preview) { openBtn.href = driveOpenUrl(url); openBtn.classList.remove('hidden'); }
                 else openBtn.classList.add('hidden');
             }
+        }
+
+        function sideNoteLinkLabel(url, label) {
+            if (label) return label;
+            if (/drive\.google\.com|docs\.google\.com/.test(url)) return 'Googleドライブの資料';
+            try { return new URL(url).hostname; } catch (e) { return url; }
+        }
+
+        function renderSideNotes() {
+            const wrap = document.getElementById('sideNotesWrap');
+            const empty = document.getElementById('sideNotesEmpty');
+            if (!wrap) return;
+            if (empty) empty.style.display = currentSideNotes.length ? 'none' : '';
+            wrap.innerHTML = currentSideNotes.map((note) => {
+                const links = (note.links || []).map((lnk, li) => `
+                    <span class="inline-flex items-center gap-1 bg-white/80 border border-amber-300 rounded-full pl-2 pr-1 py-0.5 text-[11px] font-bold text-slate-700 max-w-full">
+                        <a href="${escapeHtml(lnk.url)}" target="_blank" rel="noopener" class="truncate hover:underline"><i class="fa-solid fa-paperclip text-amber-600 mr-0.5"></i>${escapeHtml(sideNoteLinkLabel(lnk.url, lnk.label))}</a>
+                        <button type="button" onclick="removeSideNoteLink('${note.id}', ${li})" class="w-4 h-4 flex items-center justify-center rounded-full bg-amber-200 hover:bg-amber-300 text-amber-800 text-[9px] shrink-0" title="リンクを外す"><i class="fa-solid fa-xmark"></i></button>
+                    </span>`).join('');
+                return `
+                <div class="bg-amber-100 border border-amber-200 rounded-md shadow-md p-2.5 relative" style="background-image: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 40%);">
+                    <button type="button" onclick="deleteSideNote('${note.id}')" class="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-amber-200/80 hover:bg-amber-300 text-amber-800 text-[10px]" title="ふせんを消す"><i class="fa-solid fa-xmark"></i></button>
+                    <textarea rows="3" oninput="updateSideNoteText('${note.id}', this.value)" placeholder="メモを書く" class="w-full bg-transparent text-[13px] leading-relaxed text-slate-800 placeholder-amber-700/40 focus:outline-none resize-y pr-5">${escapeHtml(note.text || '')}</textarea>
+                    <div class="flex flex-wrap gap-1 mt-1">${links}</div>
+                    <div class="flex gap-1 mt-2">
+                        <input id="sn-url-${note.id}" type="text" placeholder="資料のリンク（ドライブ等）" class="flex-1 min-w-0 text-[11px] bg-white/80 border border-amber-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400">
+                        <input id="sn-label-${note.id}" type="text" placeholder="名前" class="w-16 shrink-0 text-[11px] bg-white/80 border border-amber-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-400">
+                        <button type="button" onclick="addSideNoteLink('${note.id}')" class="bg-amber-400 hover:bg-amber-300 text-amber-900 text-[11px] font-bold px-2 py-1 rounded transition shrink-0">添付</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function addSideNote() {
+            currentSideNotes.push({ id: 'n' + Date.now().toString(36), text: '', links: [] });
+            renderSideNotes();
+            saveCurrentWeekData();
+        }
+
+        function deleteSideNote(id) {
+            currentSideNotes = currentSideNotes.filter(n => n.id !== id);
+            renderSideNotes();
+            saveCurrentWeekData();
+        }
+
+        function updateSideNoteText(id, value) {
+            const note = currentSideNotes.find(n => n.id === id);
+            if (note) { note.text = value; saveCurrentWeekData(); }
+        }
+
+        function addSideNoteLink(id) {
+            const note = currentSideNotes.find(n => n.id === id);
+            if (!note) return;
+            const urlEl = document.getElementById('sn-url-' + id);
+            const labelEl = document.getElementById('sn-label-' + id);
+            const url = urlEl ? urlEl.value.trim() : '';
+            if (!url) { showToast('リンクを入力してください'); return; }
+            if (!/^https?:\/\//i.test(url)) { showToast('http:// または https:// で始まるリンクを貼ってください'); return; }
+            if (!Array.isArray(note.links)) note.links = [];
+            note.links.push({ url: url, label: labelEl ? labelEl.value.trim() : '' });
+            renderSideNotes();
+            saveCurrentWeekData();
+            showToast('ふせんにリンクを添付しました');
+        }
+
+        function removeSideNoteLink(id, idx) {
+            const note = currentSideNotes.find(n => n.id === id);
+            if (!note || !Array.isArray(note.links)) return;
+            note.links.splice(idx, 1);
+            renderSideNotes();
+            saveCurrentWeekData();
         }
 
         function saveSidePanelLink() {
