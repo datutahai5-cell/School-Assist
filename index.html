@@ -718,18 +718,15 @@
                         <input id="sideLinkInput" type="text" placeholder="https://drive.google.com/file/d/..." class="flex-1 min-w-0 text-[11px] text-slate-500 border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400">
                         <button onclick="saveSidePanelLink()" class="bg-slate-600 hover:bg-slate-500 text-white text-[10px] font-bold px-2 py-1 rounded transition">保存</button>
                     </div>
-                    <div class="mt-auto pt-4">
-                        <div class="flex items-center justify-between mb-2 border-t border-dashed border-slate-200 pt-3">
-                            <h3 class="font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-note-sticky text-amber-500 mr-1.5"></i>ふせん</h3>
-                            <button onclick="addSideNote()" class="bg-amber-300 hover:bg-amber-200 text-amber-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow transition" style="transform: rotate(-1.5deg);">＋ ふせんを追加</button>
-                        </div>
-                        <div id="sideNotesWrap" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-                        <p id="sideNotesEmpty" class="text-[11px] text-slate-400 leading-relaxed">ふせんはまだありません。「＋ ふせんを追加」で、その週に貼っておきたいメモや、Googleドライブの資料リンクを残せます。</p>
-                    </div>
                   </div>
                 </aside>
                 </div>
             </main>
+        <!-- ふせんドック（画面右下に固定） -->
+        <div id="sideNotesDock" class="hidden no-print fixed bottom-20 right-3 sm:right-4 z-40 flex flex-col items-end gap-2">
+            <div id="sideNotesWrap" class="flex flex-col items-end gap-2 max-h-[62vh] overflow-y-auto p-0.5"></div>
+            <button onclick="addSideNote()" class="bg-amber-300 hover:bg-amber-200 text-amber-900 text-xs font-bold px-3 py-2 rounded-lg shadow-lg transition" style="transform: rotate(-1.5deg);">＋ ふせんを追加</button>
+        </div>
         </div>
 
     </div>
@@ -2021,6 +2018,8 @@
             const weekFooterEl = document.getElementById('weekFooter');
             if (weekFooterEl) weekFooterEl.style.display = panelModeActive ? 'none' : '';
             if (weekTitleInput) weekTitleInput.style.width = panelModeActive ? '6.5rem' : '';
+            const notesDockEl = document.getElementById('sideNotesDock');
+            if (notesDockEl) notesDockEl.classList.toggle('hidden', !panelModeActive);
 
             const sundayDate = new Date(currentMonday);
             sundayDate.setDate(currentMonday.getDate() + (showWeekend ? 6 : 4));
@@ -2591,7 +2590,7 @@
                         <button type="button" onclick="removeSideNoteLink('${note.id}', ${li})" class="w-4 h-4 flex items-center justify-center rounded-full bg-amber-200 hover:bg-amber-300 text-amber-800 text-[9px] shrink-0" title="リンクを外す"><i class="fa-solid fa-xmark"></i></button>
                     </span>`).join('');
                 return `
-                <div class="bg-amber-100 border border-amber-200 rounded-md shadow-md p-2.5 relative" style="background-image: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 40%);">
+                <div class="bg-amber-100 border border-amber-200 rounded-md shadow-md p-2.5 relative w-72 max-w-[86vw]" style="background-image: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 40%);">
                     <button type="button" onclick="deleteSideNote('${note.id}')" class="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-amber-200/80 hover:bg-amber-300 text-amber-800 text-[10px]" title="ふせんを消す"><i class="fa-solid fa-xmark"></i></button>
                     <textarea rows="3" oninput="updateSideNoteText('${note.id}', this.value)" placeholder="メモを書く" class="w-full bg-transparent text-[13px] leading-relaxed text-slate-800 placeholder-amber-700/40 focus:outline-none resize-y pr-5">${escapeHtml(note.text || '')}</textarea>
                     <div class="flex flex-wrap gap-1 mt-1">${links}</div>
