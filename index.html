@@ -576,36 +576,63 @@
 
             <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-3">
                 <h3 id="taskFormTitle" class="font-bold text-lg text-slate-800"><i class="fa-solid fa-plus text-indigo-500"></i> タスクを追加</h3>
-                <input id="taskTitleInput" type="text" placeholder="やること（例：学年だよりを印刷する）" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
-                <div class="flex flex-wrap gap-2">
-                    <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">期限
-                        <input id="taskDueInput" type="date" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
-                    </label>
-                    <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">時刻
-                        <input id="taskTimeInput" type="time" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
-                    </label>
-                    <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">優先度
-                        <select id="taskPriorityInput" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
-                            <option value="0">普通</option>
-                            <option value="1">大事</option>
-                        </select>
-                    </label>
-                    <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">繰り返し
-                        <select id="taskRepeatInput" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
-                            <option value="">なし</option>
-                            <option value="weekly">毎週</option>
-                            <option value="monthly">毎月</option>
-                        </select>
-                    </label>
-                </div>
-                <input id="taskMemoInput" type="text" placeholder="メモ（任意）" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
-                <div class="flex flex-wrap gap-2">
-                    <button id="taskSubmitBtn" onclick="submitTaskForm()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl px-5 py-2.5 text-sm shadow transition touch-target">
-                        <i class="fa-solid fa-plus"></i> 追加する
-                    </button>
-                    <button id="taskCancelEditBtn" onclick="cancelTaskEdit()" class="hidden bg-white hover:bg-slate-50 text-slate-600 border-2 border-slate-300 font-bold rounded-xl px-4 py-2.5 text-sm transition touch-target">
+                <input id="taskTitleInput" type="text" placeholder="何をしたいですか？" class="w-full text-lg font-bold text-slate-800 placeholder-slate-300 border-0 border-b-2 border-transparent focus:border-indigo-300 focus:outline-none px-1 py-2 bg-transparent">
+                <textarea id="taskMemoInput" rows="2" placeholder="説明" class="w-full text-sm text-slate-700 placeholder-slate-300 border-0 focus:outline-none px-1 py-1 bg-transparent resize-none"></textarea>
+                <div id="taskChips" class="hidden flex-wrap gap-1.5"></div>
+                <div class="flex items-center gap-1 pt-2 border-t border-slate-100">
+                    <button type="button" id="taskDateBtn" onclick="toggleTaskPanel('date')" title="日付と時間" class="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-500 text-lg transition"><i class="fa-regular fa-calendar-days"></i></button>
+                    <button type="button" id="taskPriBtn" onclick="toggleTaskPanel('priority')" title="優先度" class="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-500 text-lg transition"><i class="fa-solid fa-flag"></i></button>
+                    <button type="button" id="taskTagBtn" onclick="toggleTaskPanel('tags')" title="タグ" class="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-500 text-lg transition"><i class="fa-solid fa-tag"></i></button>
+                    <button type="button" id="taskDriveBtn" onclick="toggleTaskPanel('drive')" title="Googleドライブのリンク" class="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-500 text-lg transition"><i class="fa-brands fa-google-drive"></i></button>
+                    <div class="flex-1"></div>
+                    <button id="taskCancelEditBtn" onclick="cancelTaskEdit()" class="hidden bg-white hover:bg-slate-50 text-slate-600 border-2 border-slate-300 font-bold rounded-xl px-3 py-2 text-xs transition touch-target">
                         編集をやめる
                     </button>
+                    <button id="taskSubmitBtn" onclick="submitTaskForm()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl px-4 py-2 text-sm shadow transition touch-target">
+                        <i class="fa-solid fa-plus"></i> 追加する
+                    </button>
+                </div>
+                <div id="taskPanelDate" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-3">
+                    <div class="flex flex-wrap gap-2">
+                        <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">日付
+                            <input id="taskDueInput" type="date" onchange="refreshTaskFormUi()" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
+                        </label>
+                        <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">時刻
+                            <input id="taskTimeInput" type="time" onchange="refreshTaskFormUi()" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
+                        </label>
+                        <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">繰り返し
+                            <select id="taskRepeatInput" onchange="refreshTaskFormUi()" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
+                                <option value="">なし</option>
+                                <option value="weekly">毎週</option>
+                                <option value="monthly">毎月</option>
+                            </select>
+                        </label>
+                        <button type="button" onclick="clearTaskDue()" class="text-xs font-bold px-3 py-2 rounded-xl bg-white border-2 border-slate-300 text-slate-500 hover:text-red-500 hover:border-red-300 transition">期限を外す</button>
+                    </div>
+                </div>
+                <div id="taskPanelPriority" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-3">
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" data-pri="high" onclick="setTaskPriority('high')" class="task-pri-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition"><i class="fa-solid fa-flag text-red-500 mr-1.5"></i>高</button>
+                        <button type="button" data-pri="mid" onclick="setTaskPriority('mid')" class="task-pri-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition"><i class="fa-solid fa-flag text-amber-500 mr-1.5"></i>中</button>
+                        <button type="button" data-pri="low" onclick="setTaskPriority('low')" class="task-pri-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition"><i class="fa-solid fa-flag text-sky-500 mr-1.5"></i>低</button>
+                        <button type="button" data-pri="none" onclick="setTaskPriority('none')" class="task-pri-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition"><i class="fa-solid fa-flag text-slate-300 mr-1.5"></i>優先度なし</button>
+                    </div>
+                </div>
+                <div id="taskPanelTags" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-3">
+                    <div id="taskTagChips" class="flex flex-wrap gap-1.5"></div>
+                    <div class="flex gap-2 mt-2.5">
+                        <input id="taskNewTagInput" type="text" placeholder="新しいタグを入力" class="flex-1 min-w-0 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
+                        <button type="button" onclick="addTaskTagFromInput()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl px-4 py-2 text-sm transition">追加</button>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">タグをタップすると、このタスクに付ける/外すができます。×はタグ自体の削除です。</p>
+                </div>
+                <div id="taskPanelDrive" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
+                    <input id="taskDriveUrlInput" type="url" placeholder="Googleドライブのリンク（https://…）" oninput="refreshTaskFormUi()" class="w-full border-2 border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
+                    <div class="flex gap-2">
+                        <input id="taskDriveNameInput" type="text" placeholder="名前（任意：例 印刷するプリント）" oninput="refreshTaskFormUi()" class="flex-1 min-w-0 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
+                        <button type="button" onclick="clearTaskDrive()" class="text-xs font-bold px-3 py-2 rounded-xl bg-white border-2 border-slate-300 text-slate-500 hover:text-red-500 hover:border-red-300 transition shrink-0">リンクを外す</button>
+                    </div>
+                    <p class="text-xs text-slate-400">ドライブでファイルを開いて「リンクをコピー」したURLを貼ってください。</p>
                 </div>
                 <p id="taskCalStatus" class="text-xs text-slate-500"></p>
             </section>
@@ -1674,6 +1701,7 @@
                 const arr = JSON.parse(localStorage.getItem(TASKS_KEY) || '[]');
                 schoolTasks = Array.isArray(arr) ? arr : [];
             } catch (e) { schoolTasks = []; }
+            loadTaskTags();
         }
         function saveTasks() {
             localStorage.setItem(TASKS_KEY, JSON.stringify(schoolTasks));
@@ -1700,13 +1728,23 @@
             const dueLabel = taskDueLabel(t);
             const border = (isOverdue && !t.done) ? 'border-red-300' : 'border-slate-200';
             const sub = (dueLabel || t.memo) ? '<div class="text-xs ' + ((isOverdue && !t.done) ? 'text-red-500 font-bold' : 'text-slate-500') + ' mt-0.5 break-words">' + escapeHtml(dueLabel) + (dueLabel && t.memo ? ' ・ ' : '') + escapeHtml(t.memo || '') + '</div>' : '';
+            const lvl = taskPriorityLevel(t);
+            const priFlag = lvl === 'high' ? ' <i class="fa-solid fa-flag text-red-500 text-xs" title="優先度：高"></i>' : (lvl === 'mid' ? ' <i class="fa-solid fa-flag text-amber-500 text-xs" title="優先度：中"></i>' : (lvl === 'low' ? ' <i class="fa-solid fa-flag text-sky-500 text-xs" title="優先度：低"></i>' : ''));
+            let meta = '';
+            const tagArr = Array.isArray(t.tags) ? t.tags : [];
+            if (tagArr.length || t.driveLink) {
+                meta = '<div class="flex flex-wrap gap-1.5 mt-1.5">'
+                    + tagArr.map(nm => '<span class="text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded-full px-2 py-0.5"><i class="fa-solid fa-tag text-slate-400 mr-0.5"></i>' + escapeHtml(nm) + '</span>').join('')
+                    + (t.driveLink ? '<a href="' + escapeHtml(t.driveLink.url) + '" target="_blank" rel="noopener" class="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5 hover:bg-emerald-100 transition"><i class="fa-brands fa-google-drive mr-0.5"></i>' + escapeHtml(t.driveLink.name || 'ドライブの資料') + '</a>' : '')
+                    + '</div>';
+            }
             return '<div class="flex items-start gap-2.5 bg-white border-2 ' + border + ' rounded-2xl px-3 py-2.5 shadow-sm">'
                 + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" title="' + (t.done ? '未完了に戻す' : '完了にする') + '" class="mt-0.5 w-6 h-6 shrink-0 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + ' text-xs transition"><i class="fa-solid fa-check"></i></button>'
                 + '<div class="flex-1 min-w-0">'
                 + '<div class="font-bold ' + (t.done ? 'line-through text-slate-400' : 'text-slate-800') + ' break-words">' + escapeHtml(t.title)
-                + (t.priority ? ' <i class="fa-solid fa-flag text-red-500 text-xs" title="大事"></i>' : '')
+                + priFlag
                 + (t.repeat ? ' <i class="fa-solid fa-repeat text-slate-400 text-xs" title="繰り返し"></i>' : '')
-                + '</div>' + sub + '</div>'
+                + '</div>' + sub + meta + '</div>'
                 + '<button type="button" onclick="editTask(\'' + t.id + '\')" title="編集" class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs transition"><i class="fa-solid fa-pen"></i></button>'
                 + '<button type="button" onclick="deleteTask(\'' + t.id + '\')" title="削除" class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 text-xs transition"><i class="fa-solid fa-trash"></i></button>'
                 + '</div>';
@@ -1756,6 +1794,144 @@
                 + '<div class="space-y-2">' + g.items.map(t => taskRowHtml(t, g.key === 'overdue')).join('') + '</div></section>'
             ).join('');
         }
+        // ===== タスク入力フォーム（アイコン方式） =====
+        const TASK_TAGS_KEY = 'edu_task_tags';
+        const TASK_PRI_META = {
+            high: { label: '高', color: '#ef4444' },
+            mid: { label: '中', color: '#f59e0b' },
+            low: { label: '低', color: '#0ea5e9' },
+            none: { label: '優先度なし', color: '#cbd5e1' }
+        };
+        let taskTagRegistry = [];
+        let taskFormPriority = 'none';
+        let taskFormTags = [];
+        let taskOpenPanel = null;
+
+        function taskPriorityLevel(t) {
+            if (!t) return 'none';
+            if (t.priority === true) return 'high';
+            if (typeof t.priority === 'string' && TASK_PRI_META[t.priority]) return t.priority;
+            return 'none';
+        }
+        function loadTaskTags() {
+            try {
+                const a = JSON.parse(localStorage.getItem(TASK_TAGS_KEY) || '[]');
+                taskTagRegistry = Array.isArray(a) ? a.filter(x => typeof x === 'string' && x) : [];
+            } catch (e) { taskTagRegistry = []; }
+        }
+        function saveTaskTags() { localStorage.setItem(TASK_TAGS_KEY, JSON.stringify(taskTagRegistry)); }
+        function toggleTaskPanel(name) {
+            taskOpenPanel = (taskOpenPanel === name) ? null : name;
+            const panels = { date: 'taskPanelDate', priority: 'taskPanelPriority', tags: 'taskPanelTags', drive: 'taskPanelDrive' };
+            Object.keys(panels).forEach(k => {
+                const el = document.getElementById(panels[k]);
+                if (el) el.classList.toggle('hidden', taskOpenPanel !== k);
+            });
+            refreshTaskFormUi();
+        }
+        function closeTaskPanels() {
+            taskOpenPanel = null;
+            ['taskPanelDate', 'taskPanelPriority', 'taskPanelTags', 'taskPanelDrive'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+        }
+        function setTaskPriority(level) {
+            taskFormPriority = TASK_PRI_META[level] ? level : 'none';
+            refreshTaskFormUi();
+        }
+        function clearTaskDue() {
+            const d = document.getElementById('taskDueInput'); if (d) d.value = '';
+            const t = document.getElementById('taskTimeInput'); if (t) t.value = '';
+            const r = document.getElementById('taskRepeatInput'); if (r) r.value = '';
+            refreshTaskFormUi();
+        }
+        function clearTaskDrive() {
+            const u = document.getElementById('taskDriveUrlInput'); if (u) u.value = '';
+            const n = document.getElementById('taskDriveNameInput'); if (n) n.value = '';
+            refreshTaskFormUi();
+        }
+        function toggleTaskTag(name) {
+            const i = taskFormTags.indexOf(name);
+            if (i >= 0) taskFormTags.splice(i, 1); else taskFormTags.push(name);
+            refreshTaskFormUi();
+        }
+        function deleteTaskTag(name) {
+            taskTagRegistry = taskTagRegistry.filter(x => x !== name);
+            taskFormTags = taskFormTags.filter(x => x !== name);
+            saveTaskTags();
+            refreshTaskFormUi();
+        }
+        function addTaskTagFromInput() {
+            const input = document.getElementById('taskNewTagInput');
+            if (!input) return;
+            const name = (input.value || '').trim();
+            if (!name) return;
+            if (!taskTagRegistry.includes(name)) { taskTagRegistry.push(name); saveTaskTags(); }
+            if (!taskFormTags.includes(name)) taskFormTags.push(name);
+            input.value = '';
+            refreshTaskFormUi();
+        }
+        function renderTaskTagChips() {
+            const wrap = document.getElementById('taskTagChips');
+            if (!wrap) return;
+            if (!taskTagRegistry.length) {
+                wrap.innerHTML = '<p class="text-xs text-slate-400">まだタグがありません。下の欄から追加できます。</p>';
+                return;
+            }
+            wrap.innerHTML = taskTagRegistry.map(nm => {
+                const on = taskFormTags.includes(nm);
+                return '<span class="inline-flex items-center gap-1 text-xs font-bold rounded-full pl-3 pr-1.5 py-1 border-2 transition ' + (on ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-slate-600') + '">'
+                    + '<button type="button" onclick="toggleTaskTag(\'' + escapeHtml(nm) + '\')">' + escapeHtml(nm) + '</button>'
+                    + '<button type="button" onclick="deleteTaskTag(\'' + escapeHtml(nm) + '\')" title="タグを削除" class="' + (on ? 'text-white/70 hover:text-white' : 'text-slate-300 hover:text-red-400') + ' text-[10px] px-0.5"><i class="fa-solid fa-xmark"></i></button></span>';
+            }).join('');
+        }
+        function refreshTaskFormUi() {
+            const dueEl = document.getElementById('taskDueInput');
+            const timeEl = document.getElementById('taskTimeInput');
+            const repEl2 = document.getElementById('taskRepeatInput');
+            const due = dueEl ? dueEl.value : '';
+            const dueTime = timeEl ? timeEl.value : '';
+            const repeat = repEl2 ? repEl2.value : '';
+            const driveUrlEl = document.getElementById('taskDriveUrlInput');
+            const driveNameEl = document.getElementById('taskDriveNameInput');
+            const driveUrl = driveUrlEl ? driveUrlEl.value.trim() : '';
+            const driveName = driveNameEl ? driveNameEl.value.trim() : '';
+            const dateBtn = document.getElementById('taskDateBtn');
+            if (dateBtn) { dateBtn.style.color = due ? '#6366f1' : ''; dateBtn.style.background = (taskOpenPanel === 'date') ? '#eef2ff' : ''; }
+            const priBtn = document.getElementById('taskPriBtn');
+            if (priBtn) { priBtn.style.color = taskFormPriority !== 'none' ? TASK_PRI_META[taskFormPriority].color : ''; priBtn.style.background = (taskOpenPanel === 'priority') ? '#eef2ff' : ''; }
+            const tagBtn = document.getElementById('taskTagBtn');
+            if (tagBtn) { tagBtn.style.color = taskFormTags.length ? '#6366f1' : ''; tagBtn.style.background = (taskOpenPanel === 'tags') ? '#eef2ff' : ''; }
+            const driveBtn = document.getElementById('taskDriveBtn');
+            if (driveBtn) { driveBtn.style.color = driveUrl ? '#059669' : ''; driveBtn.style.background = (taskOpenPanel === 'drive') ? '#eef2ff' : ''; }
+            document.querySelectorAll('.task-pri-btn').forEach(b => {
+                const on = b.dataset && b.dataset.pri === taskFormPriority;
+                b.style.borderColor = on ? '#6366f1' : '#e2e8f0';
+                b.style.background = on ? '#eef2ff' : '#ffffff';
+            });
+            renderTaskTagChips();
+            const chips = document.getElementById('taskChips');
+            if (!chips) return;
+            const parts = [];
+            if (due) {
+                const lbl = taskDueLabel({ due: due, dueTime: dueTime });
+                parts.push('<span class="inline-flex items-center gap-1 text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full px-2.5 py-1"><i class="fa-regular fa-calendar-days"></i>' + escapeHtml(lbl) + (repeat ? ' <i class="fa-solid fa-repeat"></i>' : '') + '<button type="button" onclick="clearTaskDue()" class="text-indigo-300 hover:text-indigo-600 ml-0.5"><i class="fa-solid fa-xmark"></i></button></span>');
+            }
+            if (taskFormPriority !== 'none') {
+                parts.push('<span class="inline-flex items-center gap-1 text-xs font-bold bg-slate-50 text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"><i class="fa-solid fa-flag" style="color:' + TASK_PRI_META[taskFormPriority].color + '"></i>優先度：' + TASK_PRI_META[taskFormPriority].label + '<button type="button" onclick="setTaskPriority(\'none\')" class="text-slate-300 hover:text-slate-500 ml-0.5"><i class="fa-solid fa-xmark"></i></button></span>');
+            }
+            taskFormTags.forEach(nm => {
+                parts.push('<span class="inline-flex items-center gap-1 text-xs font-bold bg-slate-50 text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"><i class="fa-solid fa-tag text-slate-400"></i>' + escapeHtml(nm) + '<button type="button" onclick="toggleTaskTag(\'' + escapeHtml(nm) + '\')" class="text-slate-300 hover:text-slate-500 ml-0.5"><i class="fa-solid fa-xmark"></i></button></span>');
+            });
+            if (driveUrl) {
+                parts.push('<span class="inline-flex items-center gap-1 text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2.5 py-1"><i class="fa-brands fa-google-drive"></i>' + escapeHtml(driveName || 'ドライブの資料') + '<button type="button" onclick="clearTaskDrive()" class="text-emerald-300 hover:text-emerald-600 ml-0.5"><i class="fa-solid fa-xmark"></i></button></span>');
+            }
+            chips.innerHTML = parts.join('');
+            chips.classList.toggle('hidden', !parts.length);
+            chips.classList.toggle('flex', !!parts.length);
+        }
+
         function resetTaskForm() {
             taskEditId = null;
             const titleEl = document.getElementById('taskTitleInput');
@@ -1766,8 +1942,14 @@
             if (timeEl) timeEl.value = '';
             const memoEl = document.getElementById('taskMemoInput');
             if (memoEl) memoEl.value = '';
-            const priEl = document.getElementById('taskPriorityInput');
-            if (priEl) priEl.value = '0';
+            const driveUrlEl = document.getElementById('taskDriveUrlInput');
+            if (driveUrlEl) driveUrlEl.value = '';
+            const driveNameEl = document.getElementById('taskDriveNameInput');
+            if (driveNameEl) driveNameEl.value = '';
+            taskFormPriority = 'none';
+            taskFormTags = [];
+            closeTaskPanels();
+            refreshTaskFormUi();
             const repEl = document.getElementById('taskRepeatInput');
             if (repEl) repEl.value = '';
             const formTitle = document.getElementById('taskFormTitle');
@@ -1783,17 +1965,22 @@
             const due = document.getElementById('taskDueInput').value || '';
             const dueTime = document.getElementById('taskTimeInput').value || '';
             const memo = document.getElementById('taskMemoInput').value.trim();
-            const priority = document.getElementById('taskPriorityInput').value === '1';
+            const priority = taskFormPriority;
+            const tags = taskFormTags.slice();
+            const driveUrl = document.getElementById('taskDriveUrlInput').value.trim();
+            const driveName = document.getElementById('taskDriveNameInput').value.trim();
+            if (driveUrl && !/^https?:\/\//i.test(driveUrl)) { showToast('ドライブのリンクは https:// から始まるURLを入力してください'); return; }
+            const driveLink = driveUrl ? { url: driveUrl, name: driveName } : null;
             const repeat = document.getElementById('taskRepeatInput').value || '';
             let saved = null;
             if (taskEditId) {
                 saved = schoolTasks.find(t => t.id === taskEditId) || null;
                 if (saved) {
                     saved.title = title; saved.due = due; saved.dueTime = dueTime;
-                    saved.memo = memo; saved.priority = priority; saved.repeat = repeat;
+                    saved.memo = memo; saved.priority = priority; saved.repeat = repeat; saved.tags = tags; saved.driveLink = driveLink;
                 }
             } else {
-                saved = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: title, due: due, dueTime: dueTime, memo: memo, priority: priority, repeat: repeat, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
+                saved = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: title, due: due, dueTime: dueTime, memo: memo, priority: priority, repeat: repeat, tags: tags, driveLink: driveLink, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
                 schoolTasks.push(saved);
             }
             const wasEdit = !!taskEditId;
@@ -1811,7 +1998,12 @@
             document.getElementById('taskDueInput').value = t.due || '';
             document.getElementById('taskTimeInput').value = t.dueTime || '';
             document.getElementById('taskMemoInput').value = t.memo || '';
-            document.getElementById('taskPriorityInput').value = t.priority ? '1' : '0';
+            taskFormPriority = taskPriorityLevel(t);
+            taskFormTags = Array.isArray(t.tags) ? t.tags.slice() : [];
+            document.getElementById('taskDriveUrlInput').value = t.driveLink ? (t.driveLink.url || '') : '';
+            document.getElementById('taskDriveNameInput').value = t.driveLink ? (t.driveLink.name || '') : '';
+            closeTaskPanels();
+            refreshTaskFormUi();
             document.getElementById('taskRepeatInput').value = t.repeat || '';
             const formTitle = document.getElementById('taskFormTitle');
             if (formTitle) formTitle.innerHTML = '<i class="fa-solid fa-pen text-indigo-500"></i> タスクを編集';
@@ -1852,7 +2044,7 @@
             if (t.done && t.repeat) {
                 const nd = nextRepeatDate(t.due, t.repeat);
                 if (nd) {
-                    spawned = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: t.title, due: nd, dueTime: t.dueTime || '', memo: t.memo || '', priority: !!t.priority, repeat: t.repeat, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
+                    spawned = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: t.title, due: nd, dueTime: t.dueTime || '', memo: t.memo || '', priority: taskPriorityLevel(t), repeat: t.repeat, tags: Array.isArray(t.tags) ? t.tags.slice() : [], driveLink: t.driveLink || null, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
                     schoolTasks.push(spawned);
                 }
             }
