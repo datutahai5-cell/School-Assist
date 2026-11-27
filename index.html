@@ -102,7 +102,7 @@
                 font-size: 10px;
                 padding: 0 !important;
             }
-            #view-home, #view-tasks, #view-task-form, #view-renraku-settings, #view-renraku-edit, #view-renraku-history, .renraku-day-btn, .no-print, .modal-backdrop, #saCloudPanel {
+            #view-home, #view-tasks, #view-task-form, #view-memos, #view-memo-form, #view-renraku-settings, #view-renraku-edit, #view-renraku-history, .renraku-day-btn, .no-print, .modal-backdrop, #saCloudPanel {
                 display: none !important;
             }
             #view-detail, .print-section-only {
@@ -369,6 +369,10 @@
                     <button onclick="showTasksView()" class="bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl px-4 py-2.5 font-bold text-sm sm:text-base flex items-center gap-2 shadow-md transition touch-target">
                         <i class="fa-solid fa-list-check text-lg"></i>
                         <span>タスク</span>
+                    </button>
+                    <button onclick="showMemosView()" class="bg-teal-500 hover:bg-teal-600 text-white rounded-2xl px-4 py-2.5 font-bold text-sm sm:text-base flex items-center gap-2 shadow-md transition touch-target">
+                        <i class="fa-solid fa-pen-to-square text-lg"></i>
+                        <span>メモ</span>
                     </button>
                     <button id="settingsBtn" onclick="openModal('settings-modal')" class="burst-button text-amber-900 rounded-2xl px-4 py-2.5 font-bold text-sm sm:text-base flex items-center gap-2 shadow-sm touch-target">
                         <i class="fa-solid fa-gear text-orange-600 text-lg sm:text-xl"></i>
@@ -661,6 +665,48 @@
                     <p class="text-xs text-slate-400">ドライブでファイルを開いて「リンクをコピー」したURLを貼ってください。</p>
                 </div>
                 <p id="taskCalStatus" class="text-xs text-slate-500"></p>
+            </section>
+        </div>
+
+        <!-- VIEW: MEMOS -->
+        <div id="view-memos" class="hidden space-y-4">
+            <header class="bg-teal-500 text-white rounded-2xl p-3 sm:p-4 shadow-md flex flex-wrap justify-between items-center gap-3">
+                <button onclick="showHomeView()" class="flex items-center gap-2 bg-white/15 hover:bg-white/25 rounded-xl px-3 py-2 font-bold text-sm transition touch-target">
+                    <i class="fa-solid fa-arrow-left"></i> 戻る
+                </button>
+                <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i> メモ
+                </h2>
+                <span id="memoSummary" class="text-xs sm:text-sm font-bold bg-white/15 rounded-xl px-3 py-2">0件</span>
+            </header>
+
+            <button type="button" onclick="openMemoForm()" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-2xl px-5 py-3.5 text-base shadow transition touch-target">
+                <i class="fa-solid fa-plus"></i> メモを追加
+            </button>
+
+            <div id="memoList" class="space-y-2.5"></div>
+        </div>
+
+        <!-- VIEW: MEMO FORM -->
+        <div id="view-memo-form" class="hidden space-y-4">
+            <div class="flex items-center gap-3">
+                <button onclick="backToMemoList()" class="bg-white border-2 border-slate-300 text-slate-600 font-bold px-4 py-2.5 rounded-xl shadow-sm hover:bg-slate-50 transition flex items-center gap-2 touch-target">
+                    <i class="fa-solid fa-arrow-left"></i> 戻る
+                </button>
+                <h2 id="memoFormTitle" class="text-xl sm:text-2xl font-black text-slate-800"><i class="fa-solid fa-plus text-teal-500"></i> メモを追加</h2>
+            </div>
+
+            <section class="border-2 border-slate-800 rounded-3xl p-4 sm:p-6 bg-white/90 shadow-[4px_4px_0px_#1e293b] space-y-3">
+                <input id="memoTitleInput" type="text" placeholder="タイトル（任意）" class="w-full text-lg font-bold text-slate-800 placeholder-slate-300 border-0 border-b-2 border-transparent focus:border-teal-300 focus:outline-none px-1 py-2 bg-transparent">
+                <textarea id="memoBodyInput" rows="10" placeholder="メモを書く" class="w-full text-sm sm:text-base text-slate-700 placeholder-slate-300 border-0 focus:outline-none px-1 py-1 bg-transparent resize-y"></textarea>
+                <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                    <button id="memoSubmitBtn" onclick="submitMemoForm()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl px-5 py-2.5 text-sm shadow transition touch-target">
+                        <i class="fa-solid fa-plus"></i> 追加する
+                    </button>
+                    <button id="memoCancelEditBtn" onclick="cancelMemoEdit()" class="hidden bg-white hover:bg-slate-50 text-slate-600 border-2 border-slate-300 font-bold rounded-xl px-4 py-2.5 text-sm transition touch-target">
+                        編集をやめる
+                    </button>
+                </div>
             </section>
         </div>
 
@@ -1678,6 +1724,8 @@
             document.getElementById('view-home').classList.remove('hidden');
             document.getElementById('view-tasks').classList.add('hidden');
             document.getElementById('view-task-form').classList.add('hidden');
+            document.getElementById('view-memos').classList.add('hidden');
+            document.getElementById('view-memo-form').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.add('hidden');
@@ -1688,6 +1736,8 @@
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-tasks').classList.add('hidden');
             document.getElementById('view-task-form').classList.add('hidden');
+            document.getElementById('view-memos').classList.add('hidden');
+            document.getElementById('view-memo-form').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.add('hidden');
             document.getElementById('view-detail').classList.remove('hidden');
@@ -1698,6 +1748,8 @@
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-tasks').classList.add('hidden');
             document.getElementById('view-task-form').classList.add('hidden');
+            document.getElementById('view-memos').classList.add('hidden');
+            document.getElementById('view-memo-form').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-edit').classList.add('hidden');
             document.getElementById('view-renraku-history').classList.add('hidden');
@@ -1707,6 +1759,8 @@
 
         function showTasksView() {
             document.getElementById('view-task-form').classList.add('hidden');
+            document.getElementById('view-memos').classList.add('hidden');
+            document.getElementById('view-memo-form').classList.add('hidden');
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-renraku-settings').classList.add('hidden');
@@ -2092,6 +2146,124 @@
             renderTasks();
             taskCalSync(t, 'upsert');
             if (spawned) taskCalSync(spawned, 'upsert');
+        }
+
+        // ===== メモ =====
+        const MEMOS_KEY = 'edu_memos';
+        let schoolMemos = [];
+        let memoEditId = null;
+
+        function loadMemos() {
+            try {
+                const arr = JSON.parse(localStorage.getItem(MEMOS_KEY) || '[]');
+                schoolMemos = Array.isArray(arr) ? arr : [];
+            } catch (e) { schoolMemos = []; }
+        }
+        function saveMemos() { localStorage.setItem(MEMOS_KEY, JSON.stringify(schoolMemos)); }
+        function showMemosView() {
+            document.getElementById('view-home').classList.add('hidden');
+            document.getElementById('view-detail').classList.add('hidden');
+            document.getElementById('view-tasks').classList.add('hidden');
+            document.getElementById('view-task-form').classList.add('hidden');
+            document.getElementById('view-renraku-settings').classList.add('hidden');
+            document.getElementById('view-renraku-edit').classList.add('hidden');
+            document.getElementById('view-renraku-history').classList.add('hidden');
+            document.getElementById('view-memo-form').classList.add('hidden');
+            document.getElementById('view-memos').classList.remove('hidden');
+            loadMemos();
+            renderMemos();
+        }
+        function memoDateLabel(ts) {
+            if (!ts) return '';
+            const d = new Date(ts);
+            if (isNaN(d)) return '';
+            const wd = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+            return (d.getMonth() + 1) + '/' + d.getDate() + '（' + wd + '） ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        }
+        function renderMemos() {
+            const list = document.getElementById('memoList');
+            if (!list) return;
+            const summary = document.getElementById('memoSummary');
+            if (summary) summary.textContent = schoolMemos.length + '件';
+            if (!schoolMemos.length) {
+                list.innerHTML = '<p class="font-bold text-slate-400 text-center py-8">まだメモがありません。上のボタンから追加できます。</p>';
+                return;
+            }
+            const sorted = schoolMemos.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+            list.innerHTML = sorted.map(m =>
+                '<div class="bg-white border-2 border-slate-200 rounded-2xl px-4 py-3 shadow-sm">'
+                + '<div class="flex items-start gap-2">'
+                + '<div class="flex-1 min-w-0">'
+                + (m.title ? '<div class="font-bold text-slate-800 break-words">' + escapeHtml(m.title) + '</div>' : '')
+                + (m.body ? '<div class="text-sm text-slate-600 whitespace-pre-wrap break-words line-clamp-6 mt-0.5">' + escapeHtml(m.body) + '</div>' : '')
+                + '<div class="text-[11px] text-slate-400 mt-1.5">' + memoDateLabel(m.updatedAt) + '</div>'
+                + '</div>'
+                + '<button type="button" onclick="editMemo(\'' + m.id + '\')" title="編集" class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs transition"><i class="fa-solid fa-pen"></i></button>'
+                + '<button type="button" onclick="deleteMemo(\'' + m.id + '\')" title="削除" class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 text-xs transition"><i class="fa-solid fa-trash"></i></button>'
+                + '</div></div>'
+            ).join('');
+        }
+        function resetMemoForm() {
+            memoEditId = null;
+            const titleEl = document.getElementById('memoTitleInput');
+            if (titleEl) titleEl.value = '';
+            const bodyEl = document.getElementById('memoBodyInput');
+            if (bodyEl) bodyEl.value = '';
+            const formTitle = document.getElementById('memoFormTitle');
+            if (formTitle) formTitle.innerHTML = '<i class="fa-solid fa-plus text-teal-500"></i> メモを追加';
+            const submitBtn = document.getElementById('memoSubmitBtn');
+            if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> 追加する';
+            const cancelBtn = document.getElementById('memoCancelEditBtn');
+            if (cancelBtn) cancelBtn.classList.add('hidden');
+        }
+        function openMemoForm() {
+            resetMemoForm();
+            document.getElementById('view-memos').classList.add('hidden');
+            document.getElementById('view-memo-form').classList.remove('hidden');
+            const titleEl = document.getElementById('memoTitleInput');
+            if (titleEl) titleEl.focus();
+        }
+        function backToMemoList() { showMemosView(); }
+        function submitMemoForm() {
+            const title = document.getElementById('memoTitleInput').value.trim();
+            const body = document.getElementById('memoBodyInput').value.trim();
+            if (!title && !body) { showToast('メモの内容を入力してください'); return; }
+            const now = Date.now();
+            let wasEdit = false;
+            if (memoEditId) {
+                const m = schoolMemos.find(x => x.id === memoEditId);
+                if (m) { m.title = title; m.body = body; m.updatedAt = now; wasEdit = true; }
+            } else {
+                schoolMemos.push({ id: 'm' + now.toString(36) + Math.random().toString(36).slice(2, 5), title: title, body: body, createdAt: now, updatedAt: now });
+            }
+            saveMemos();
+            resetMemoForm();
+            showMemosView();
+            showToast(wasEdit ? 'メモを更新しました' : 'メモを追加しました');
+        }
+        function editMemo(id) {
+            const m = schoolMemos.find(x => x.id === id);
+            if (!m) return;
+            memoEditId = id;
+            document.getElementById('memoTitleInput').value = m.title || '';
+            document.getElementById('memoBodyInput').value = m.body || '';
+            const formTitle = document.getElementById('memoFormTitle');
+            if (formTitle) formTitle.innerHTML = '<i class="fa-solid fa-pen text-teal-500"></i> メモを編集';
+            const submitBtn = document.getElementById('memoSubmitBtn');
+            if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> 更新する';
+            const cancelBtn = document.getElementById('memoCancelEditBtn');
+            if (cancelBtn) cancelBtn.classList.remove('hidden');
+            document.getElementById('view-memos').classList.add('hidden');
+            document.getElementById('view-memo-form').classList.remove('hidden');
+            const titleEl = document.getElementById('memoTitleInput');
+            if (titleEl) titleEl.focus();
+        }
+        function cancelMemoEdit() { resetMemoForm(); showMemosView(); }
+        function deleteMemo(id) {
+            schoolMemos = schoolMemos.filter(x => x.id !== id);
+            if (memoEditId === id) resetMemoForm();
+            saveMemos();
+            renderMemos();
         }
 
         // ===== タスクのGoogleカレンダー連携（Apps Script経由） =====
