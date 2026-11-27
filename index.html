@@ -664,6 +664,14 @@
                     </div>
                     <p class="text-xs text-slate-400">ドライブでファイルを開いて「リンクをコピー」したURLを貼ってください。</p>
                 </div>
+                <div>
+                    <p class="text-xs font-bold text-slate-500 mb-1.5"><i class="fa-solid fa-list-ul mr-1"></i>サブタスク</p>
+                    <div id="taskSubtaskList" class="space-y-1.5"></div>
+                    <div class="flex gap-2 mt-2">
+                        <input id="taskSubtaskInput" type="text" placeholder="サブタスクを入力" onkeydown="if(event.key==='Enter'){event.preventDefault();addTaskSubtaskFromInput();}" class="flex-1 min-w-0 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
+                        <button type="button" onclick="addTaskSubtaskFromInput()" class="bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl px-4 py-2 text-sm transition shrink-0">追加</button>
+                    </div>
+                </div>
                 <p id="taskCalStatus" class="text-xs text-slate-500"></p>
             </section>
         </div>
@@ -862,7 +870,7 @@
                         <span id="sidePanelWeekLabel" class="text-[11px] font-bold text-slate-500"></span>
                     </div>
                     <div class="flex gap-3 flex-1 min-h-0">
-                        <div class="flex flex-col shrink-0 min-h-0" style="width:min(430px,100%)">
+                        <div class="flex flex-col flex-1 min-w-0 min-h-0">
                             <div class="border border-slate-300 rounded-xl overflow-hidden bg-slate-50 flex-1 flex flex-col w-full" style="min-height:320px;">
                                 <iframe id="sidePreviewFrame" class="w-full hidden bg-white flex-1 min-h-0" title="週予定プレビュー"></iframe>
                                 <div id="sidePreviewEmpty" class="p-4 text-xs text-slate-500 leading-relaxed flex-1">
@@ -880,13 +888,12 @@
                                 <button onclick="saveSidePanelLink()" class="bg-slate-600 hover:bg-slate-500 text-white text-[10px] font-bold px-2 py-1 rounded transition">保存</button>
                             </div>
                         </div>
-                        <div id="sideNotesWrap" class="flex-1 min-w-0 flex flex-wrap content-start items-start gap-2 overflow-y-auto p-0.5"></div>
                     </div>
                   </div>
                 </aside>
                 </div>
             </main>
-        <!-- ふせんドック（画面右下に固定） -->
+        <!-- 手書きツールバー（画面下部に固定） -->
         <div id="hwTools" class="hidden no-print fixed bottom-20 left-1/2 z-40 bg-white rounded-full shadow-xl border border-slate-300 px-3 py-2 flex items-center gap-2" style="transform: translateX(-50%);">
             <button type="button" onclick="setHwColor('#1e293b', this)" class="hw-color-btn w-6 h-6 rounded-full border-2 border-amber-400 p-0" style="background:#1e293b;" title="黒"></button>
             <button type="button" onclick="setHwColor('#2563eb', this)" class="hw-color-btn w-6 h-6 rounded-full border-2 border-slate-200 p-0" style="background:#2563eb;" title="青"></button>
@@ -897,18 +904,6 @@
             <button type="button" onclick="setHandwritingMode(false)" class="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white transition">終わる</button>
         </div>
 
-        <div id="sideNotesDock" class="hidden no-print fixed bottom-20 right-3 sm:right-4 z-40 flex flex-col items-end">
-            <div id="sideNotePalette" class="hidden mb-2 bg-white rounded-2xl shadow-xl border border-slate-200 px-3 py-2 items-center gap-1.5">
-                <span class="text-[11px] font-bold text-slate-500 mr-0.5">色を選んで追加</span>
-                <button type="button" onclick="addSideNote('yellow')" title="黄色" class="w-7 h-7 rounded-full border border-amber-300 bg-amber-200 hover:scale-110 transition"></button>
-                <button type="button" onclick="addSideNote('pink')" title="ピンク" class="w-7 h-7 rounded-full border border-pink-300 bg-pink-200 hover:scale-110 transition"></button>
-                <button type="button" onclick="addSideNote('blue')" title="水色" class="w-7 h-7 rounded-full border border-sky-300 bg-sky-200 hover:scale-110 transition"></button>
-                <button type="button" onclick="addSideNote('green')" title="緑色" class="w-7 h-7 rounded-full border border-emerald-300 bg-emerald-200 hover:scale-110 transition"></button>
-                <button type="button" onclick="addSideNote('orange')" title="オレンジ" class="w-7 h-7 rounded-full border border-orange-300 bg-orange-200 hover:scale-110 transition"></button>
-                <button type="button" onclick="addSideNote('purple')" title="紫色" class="w-7 h-7 rounded-full border border-violet-300 bg-violet-200 hover:scale-110 transition"></button>
-            </div>
-            <button onclick="toggleSideNotePalette()" class="bg-amber-300 hover:bg-amber-200 text-amber-900 text-xs font-bold px-3 py-2 rounded-lg shadow-lg transition" style="transform: rotate(-1.5deg);">＋ ふせんを追加</button>
-        </div>
         </div>
 
     </div>
@@ -1829,13 +1824,28 @@
                     + (t.driveLink ? '<a href="' + escapeHtml(t.driveLink.url) + '" target="_blank" rel="noopener" class="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5 hover:bg-emerald-100 transition"><i class="fa-brands fa-google-drive mr-0.5"></i>' + escapeHtml(t.driveLink.name || 'ドライブの資料') + '</a>' : '')
                     + '</div>';
             }
+            const subArr = Array.isArray(t.subtasks) ? t.subtasks : [];
+            let subs = '';
+            if (subArr.length) {
+                const doneCount = subArr.filter(x => x.done).length;
+                subs = '<div class="mt-1.5">'
+                    + '<div class="text-[11px] font-bold text-slate-400 mb-1">サブタスク ' + doneCount + '/' + subArr.length + '</div>'
+                    + '<div class="space-y-1">'
+                    + subArr.map(st =>
+                        '<div class="flex items-center gap-1.5">'
+                        + '<button type="button" onclick="toggleSubtaskDone(\'' + t.id + '\', \'' + st.id + '\')" class="w-4 h-4 shrink-0 flex items-center justify-center rounded border-2 ' + (st.done ? 'bg-indigo-400 border-indigo-400 text-white' : 'bg-white border-slate-300 text-transparent') + ' text-[8px] transition"><i class="fa-solid fa-check"></i></button>'
+                        + '<span class="text-xs break-words ' + (st.done ? 'line-through text-slate-400' : 'text-slate-600') + '">' + escapeHtml(st.title) + '</span>'
+                        + '</div>'
+                    ).join('')
+                    + '</div></div>';
+            }
             return '<div class="flex items-start gap-2.5 bg-white border-2 ' + border + ' rounded-2xl px-3 py-2.5 shadow-sm">'
                 + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" title="' + (t.done ? '未完了に戻す' : '完了にする') + '" class="mt-0.5 w-6 h-6 shrink-0 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + ' text-xs transition"><i class="fa-solid fa-check"></i></button>'
                 + '<div class="flex-1 min-w-0">'
                 + '<div class="font-bold ' + (t.done ? 'line-through text-slate-400' : 'text-slate-800') + ' break-words">' + escapeHtml(t.title)
                 + priFlag
                 + (t.repeat ? ' <i class="fa-solid fa-repeat text-slate-400 text-xs" title="繰り返し"></i>' : '')
-                + '</div>' + sub + meta + '</div>'
+                + '</div>' + sub + meta + subs + '</div>'
                 + '<button type="button" onclick="editTask(\'' + t.id + '\')" title="編集" class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs transition"><i class="fa-solid fa-pen"></i></button>'
                 + '<button type="button" onclick="deleteTask(\'' + t.id + '\')" title="削除" class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 text-xs transition"><i class="fa-solid fa-trash"></i></button>'
                 + '</div>';
@@ -1896,6 +1906,7 @@
         let taskTagRegistry = [];
         let taskFormPriority = 'none';
         let taskFormTags = [];
+        let taskFormSubtasks = [];
         let taskOpenPanel = null;
 
         function taskPriorityLevel(t) {
@@ -2023,6 +2034,48 @@
             chips.classList.toggle('flex', !!parts.length);
         }
 
+        function renderTaskFormSubtasks() {
+            const wrap = document.getElementById('taskSubtaskList');
+            if (!wrap) return;
+            if (!taskFormSubtasks.length) { wrap.innerHTML = ''; return; }
+            wrap.innerHTML = taskFormSubtasks.map(st =>
+                '<div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5">'
+                + '<button type="button" onclick="toggleTaskFormSubtask(\'' + st.id + '\')" class="w-5 h-5 shrink-0 flex items-center justify-center rounded-md border-2 ' + (st.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent') + ' text-[10px] transition"><i class="fa-solid fa-check"></i></button>'
+                + '<span class="flex-1 min-w-0 text-sm break-words ' + (st.done ? 'line-through text-slate-400' : 'text-slate-700') + '">' + escapeHtml(st.title) + '</span>'
+                + '<button type="button" onclick="deleteTaskFormSubtask(\'' + st.id + '\')" class="text-slate-300 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>'
+                + '</div>'
+            ).join('');
+        }
+        function addTaskSubtaskFromInput() {
+            const input = document.getElementById('taskSubtaskInput');
+            if (!input) return;
+            const title = (input.value || '').trim();
+            if (!title) return;
+            taskFormSubtasks.push({ id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: title, done: false });
+            input.value = '';
+            renderTaskFormSubtasks();
+            input.focus();
+        }
+        function toggleTaskFormSubtask(id) {
+            const st = taskFormSubtasks.find(x => x.id === id);
+            if (!st) return;
+            st.done = !st.done;
+            renderTaskFormSubtasks();
+        }
+        function deleteTaskFormSubtask(id) {
+            taskFormSubtasks = taskFormSubtasks.filter(x => x.id !== id);
+            renderTaskFormSubtasks();
+        }
+        function toggleSubtaskDone(taskId, subId) {
+            const t = schoolTasks.find(x => x.id === taskId);
+            if (!t || !Array.isArray(t.subtasks)) return;
+            const st = t.subtasks.find(x => x.id === subId);
+            if (!st) return;
+            st.done = !st.done;
+            saveTasks();
+            renderTasks();
+        }
+
         function resetTaskForm() {
             taskEditId = null;
             const titleEl = document.getElementById('taskTitleInput');
@@ -2039,6 +2092,8 @@
             if (driveNameEl) driveNameEl.value = '';
             taskFormPriority = 'none';
             taskFormTags = [];
+            taskFormSubtasks = [];
+            renderTaskFormSubtasks();
             closeTaskPanels();
             refreshTaskFormUi();
             const repEl = document.getElementById('taskRepeatInput');
@@ -2062,16 +2117,17 @@
             const driveName = document.getElementById('taskDriveNameInput').value.trim();
             if (driveUrl && !/^https?:\/\//i.test(driveUrl)) { showToast('ドライブのリンクは https:// から始まるURLを入力してください'); return; }
             const driveLink = driveUrl ? { url: driveUrl, name: driveName } : null;
+            const subtasks = taskFormSubtasks.map(x => ({ id: x.id, title: x.title, done: !!x.done }));
             const repeat = document.getElementById('taskRepeatInput').value || '';
             let saved = null;
             if (taskEditId) {
                 saved = schoolTasks.find(t => t.id === taskEditId) || null;
                 if (saved) {
                     saved.title = title; saved.due = due; saved.dueTime = dueTime;
-                    saved.memo = memo; saved.priority = priority; saved.repeat = repeat; saved.tags = tags; saved.driveLink = driveLink;
+                    saved.memo = memo; saved.priority = priority; saved.repeat = repeat; saved.tags = tags; saved.driveLink = driveLink; saved.subtasks = subtasks;
                 }
             } else {
-                saved = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: title, due: due, dueTime: dueTime, memo: memo, priority: priority, repeat: repeat, tags: tags, driveLink: driveLink, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
+                saved = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: title, due: due, dueTime: dueTime, memo: memo, priority: priority, repeat: repeat, tags: tags, driveLink: driveLink, subtasks: subtasks, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
                 schoolTasks.push(saved);
             }
             const wasEdit = !!taskEditId;
@@ -2094,6 +2150,8 @@
             taskFormTags = Array.isArray(t.tags) ? t.tags.slice() : [];
             document.getElementById('taskDriveUrlInput').value = t.driveLink ? (t.driveLink.url || '') : '';
             document.getElementById('taskDriveNameInput').value = t.driveLink ? (t.driveLink.name || '') : '';
+            taskFormSubtasks = Array.isArray(t.subtasks) ? t.subtasks.map(x => ({ id: x.id, title: x.title, done: !!x.done })) : [];
+            renderTaskFormSubtasks();
             closeTaskPanels();
             refreshTaskFormUi();
             document.getElementById('taskRepeatInput').value = t.repeat || '';
@@ -2138,7 +2196,7 @@
             if (t.done && t.repeat) {
                 const nd = nextRepeatDate(t.due, t.repeat);
                 if (nd) {
-                    spawned = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: t.title, due: nd, dueTime: t.dueTime || '', memo: t.memo || '', priority: taskPriorityLevel(t), repeat: t.repeat, tags: Array.isArray(t.tags) ? t.tags.slice() : [], driveLink: t.driveLink || null, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
+                    spawned = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: t.title, due: nd, dueTime: t.dueTime || '', memo: t.memo || '', priority: taskPriorityLevel(t), repeat: t.repeat, tags: Array.isArray(t.tags) ? t.tags.slice() : [], driveLink: t.driveLink || null, subtasks: (Array.isArray(t.subtasks) ? t.subtasks : []).map(x => ({ id: x.id, title: x.title, done: false })), done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
                     schoolTasks.push(spawned);
                 }
             }
@@ -2943,8 +3001,6 @@
             if (weekFooterEl) weekFooterEl.style.display = panelModeActive ? 'none' : '';
             if (weekTitleInput) weekTitleInput.style.width = panelModeActive ? '6.5rem' : '';
             if (table) table.style.minWidth = panelModeActive ? '' : ((daysToShowAll.length > 5) ? '760px' : '600px');
-            const notesDockEl = document.getElementById('sideNotesDock');
-            if (notesDockEl) notesDockEl.classList.toggle('hidden', !panelModeActive);
 
             const sundayDate = new Date(currentMonday);
             sundayDate.setDate(currentMonday.getDate() + (showWeekend ? 6 : 4));
@@ -2977,9 +3033,7 @@
             const wcEl = document.getElementById('weekCommentInput');
             if (bnEl) bnEl.value = savedData.bringNotes || '';
             if (wcEl) wcEl.value = savedData.weekComment || '';
-            currentSideNotes = Array.isArray(savedData.sideNotes) ? JSON.parse(JSON.stringify(savedData.sideNotes)) : [];
             currentHandwriting = Array.isArray(savedData.handwriting) ? JSON.parse(JSON.stringify(savedData.handwriting)) : [];
-            renderSideNotes();
             footerLoadedForKey = getWeekKey(currentMonday);
             requestAnimationFrame(() => { fitFooterFonts(); syncFooterPrintText(); });
             requestAnimationFrame(() => { updateHandwritingLayer(); });
@@ -3340,7 +3394,6 @@
                 const wcInput = document.getElementById('weekCommentInput');
                 if (bnInput) existing.bringNotes = bnInput.value;
                 if (wcInput) existing.weekComment = wcInput.value;
-                existing.sideNotes = currentSideNotes;
                 existing.handwriting = currentHandwriting;
             }
 
@@ -3390,7 +3443,6 @@
         let sidePanelFocusIdx = 0;
         let sidePanelPrintRestore = false;
         const WEEK_SCHEDULE_LINKS_KEY = 'edu_week_schedule_links';
-        let currentSideNotes = [];
         let currentHandwriting = [];
 
         function loadWeekScheduleLinks() {
@@ -3499,136 +3551,6 @@
                 if (preview) { openBtn.href = driveOpenUrl(url); openBtn.classList.remove('hidden'); }
                 else openBtn.classList.add('hidden');
             }
-        }
-
-        function sideNoteLinkLabel(url, label) {
-            if (label) return label;
-            if (/drive\.google\.com|docs\.google\.com/.test(url)) return 'Googleドライブの資料';
-            try { return new URL(url).hostname; } catch (e) { return url; }
-        }
-
-        const NOTE_COLOR_STYLES = {
-            yellow: { card: 'bg-amber-100 border-amber-200', btn: 'bg-amber-200/80 hover:bg-amber-300 text-amber-800', chipBorder: 'border-amber-300', input: 'border-amber-300 focus:ring-amber-400', attach: 'bg-amber-400 hover:bg-amber-300 text-amber-900', titleBorder: 'border-amber-300/60', placeholder: 'placeholder-amber-700/40' },
-            pink: { card: 'bg-pink-100 border-pink-200', btn: 'bg-pink-200/80 hover:bg-pink-300 text-pink-800', chipBorder: 'border-pink-300', input: 'border-pink-300 focus:ring-pink-400', attach: 'bg-pink-400 hover:bg-pink-300 text-pink-900', titleBorder: 'border-pink-300/60', placeholder: 'placeholder-pink-700/40' },
-            blue: { card: 'bg-sky-100 border-sky-200', btn: 'bg-sky-200/80 hover:bg-sky-300 text-sky-800', chipBorder: 'border-sky-300', input: 'border-sky-300 focus:ring-sky-400', attach: 'bg-sky-400 hover:bg-sky-300 text-sky-900', titleBorder: 'border-sky-300/60', placeholder: 'placeholder-sky-700/40' },
-            green: { card: 'bg-emerald-100 border-emerald-200', btn: 'bg-emerald-200/80 hover:bg-emerald-300 text-emerald-800', chipBorder: 'border-emerald-300', input: 'border-emerald-300 focus:ring-emerald-400', attach: 'bg-emerald-400 hover:bg-emerald-300 text-emerald-900', titleBorder: 'border-emerald-300/60', placeholder: 'placeholder-emerald-700/40' },
-            orange: { card: 'bg-orange-100 border-orange-200', btn: 'bg-orange-200/80 hover:bg-orange-300 text-orange-800', chipBorder: 'border-orange-300', input: 'border-orange-300 focus:ring-orange-400', attach: 'bg-orange-400 hover:bg-orange-300 text-orange-900', titleBorder: 'border-orange-300/60', placeholder: 'placeholder-orange-700/40' },
-            purple: { card: 'bg-violet-100 border-violet-200', btn: 'bg-violet-200/80 hover:bg-violet-300 text-violet-800', chipBorder: 'border-violet-300', input: 'border-violet-300 focus:ring-violet-400', attach: 'bg-violet-400 hover:bg-violet-300 text-violet-900', titleBorder: 'border-violet-300/60', placeholder: 'placeholder-violet-700/40' }
-        };
-        function sideNoteColorStyle(note) {
-            return NOTE_COLOR_STYLES[(note && note.color) || 'yellow'] || NOTE_COLOR_STYLES.yellow;
-        }
-
-        function renderSideNotes() {
-            const wrap = document.getElementById('sideNotesWrap');
-            const empty = document.getElementById('sideNotesEmpty');
-            if (!wrap) return;
-            if (empty) empty.style.display = currentSideNotes.length ? 'none' : '';
-            wrap.innerHTML = currentSideNotes.map((note) => {
-                const c = sideNoteColorStyle(note);
-                const links = (note.links || []).map((lnk, li) => `
-                    <span class="inline-flex items-center gap-1 bg-white/80 border ${c.chipBorder} rounded-full pl-2 pr-1 py-0.5 text-[11px] font-bold text-slate-700 max-w-full">
-                        <a href="${escapeHtml(lnk.url)}" target="_blank" rel="noopener" class="truncate hover:underline"><i class="fa-solid fa-paperclip text-slate-500 mr-0.5"></i>${escapeHtml(sideNoteLinkLabel(lnk.url, lnk.label))}</a>
-                        <button type="button" onclick="removeSideNoteLink('${note.id}', ${li})" class="w-4 h-4 flex items-center justify-center rounded-full ${c.btn} text-[9px] shrink-0" title="リンクを外す"><i class="fa-solid fa-xmark"></i></button>
-                    </span>`).join('');
-                return `
-                <div class="${c.card} border rounded-md shadow-md p-2.5 relative flex-1 min-w-[15rem] max-w-full" style="background-image: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 40%);">
-                    <button type="button" onclick="deleteSideNote('${note.id}')" class="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full ${c.btn} text-[10px]" title="ふせんを消す"><i class="fa-solid fa-xmark"></i></button>
-                    <textarea rows="1" oninput="updateSideNoteTitle('${note.id}', this.value); autoGrowSideNoteTitle(this);" placeholder="見出し" class="sn-title w-full bg-transparent font-bold text-[14px] leading-snug text-slate-800 ${c.placeholder} focus:outline-none pr-12 border-b ${c.titleBorder} pb-1 mb-1 resize-none overflow-hidden">${escapeHtml(note.title || '')}</textarea>
-                    <textarea rows="2" oninput="updateSideNoteText('${note.id}', this.value); autoGrowSideNoteTitle(this);" placeholder="内容を書く" class="sn-body w-full bg-transparent text-[13px] leading-relaxed text-slate-800 ${c.placeholder} focus:outline-none resize-none overflow-hidden pr-12">${escapeHtml(note.text || '')}</textarea>
-                    <div class="flex flex-wrap gap-1 mt-1">${links}</div>
-                    <div id="sn-form-${note.id}" class="hidden gap-1 mt-1.5">
-                        <input id="sn-url-${note.id}" type="text" placeholder="資料のリンク（ドライブ等）" class="flex-1 min-w-0 text-[11px] bg-white/80 border ${c.input} rounded px-1.5 py-1 focus:outline-none focus:ring-1">
-                        <input id="sn-label-${note.id}" type="text" placeholder="名前" class="w-16 shrink-0 text-[11px] bg-white/80 border ${c.input} rounded px-1.5 py-1 focus:outline-none focus:ring-1">
-                        <button type="button" onclick="addSideNoteLink('${note.id}')" class="${c.attach} text-[11px] font-bold px-2 py-1 rounded transition shrink-0">添付</button>
-                    </div>
-                    <button type="button" onclick="toggleSideNoteLinkForm('${note.id}', this)" title="リンクを添付" class="absolute top-1.5 right-8 w-5 h-5 flex items-center justify-center rounded-full ${c.btn} text-[10px] transition"><i class="fa-solid fa-paperclip"></i></button>
-                </div>`;
-            }).join('');
-            wrap.querySelectorAll('.sn-title, .sn-body').forEach(el => autoGrowSideNoteTitle(el));
-        }
-
-        function autoGrowSideNoteTitle(el) {
-            if (!el) return;
-            el.style.height = 'auto';
-            el.style.height = el.scrollHeight + 'px';
-        }
-
-        function toggleSideNotePalette() {
-            const pal = document.getElementById('sideNotePalette');
-            if (!pal) return;
-            const show = pal.classList.contains('hidden');
-            pal.classList.toggle('hidden', !show);
-            pal.classList.toggle('flex', show);
-        }
-
-        function addSideNote(colorKey) {
-            currentSideNotes.push({ id: 'n' + Date.now().toString(36), title: '', text: '', links: [], color: NOTE_COLOR_STYLES[colorKey] ? colorKey : 'yellow' });
-            renderSideNotes();
-            saveCurrentWeekData();
-            const pal = document.getElementById('sideNotePalette');
-            if (pal) { pal.classList.add('hidden'); pal.classList.remove('flex'); }
-            const wrap = document.getElementById('sideNotesWrap');
-            if (wrap) {
-                const titles = wrap.querySelectorAll('.sn-title');
-                const last = titles[titles.length - 1];
-                if (last) last.focus();
-            }
-        }
-
-        function deleteSideNote(id) {
-            currentSideNotes = currentSideNotes.filter(n => n.id !== id);
-            renderSideNotes();
-            saveCurrentWeekData();
-        }
-
-        function updateSideNoteTitle(id, value) {
-            const note = currentSideNotes.find(n => n.id === id);
-            if (note) { note.title = value; saveCurrentWeekData(); }
-        }
-
-        function updateSideNoteText(id, value) {
-            const note = currentSideNotes.find(n => n.id === id);
-            if (note) { note.text = value; saveCurrentWeekData(); }
-        }
-
-        function toggleSideNoteLinkForm(id, btn) {
-            const form = document.getElementById('sn-form-' + id);
-            if (!form) return;
-            const show = form.classList.contains('hidden');
-            form.classList.toggle('hidden', !show);
-            form.classList.toggle('flex', show);
-            if (btn) {
-                btn.innerHTML = show ? '<i class="fa-solid fa-chevron-up"></i>' : '<i class="fa-solid fa-paperclip"></i>';
-                btn.title = show ? 'とじる' : 'リンクを添付';
-            }
-            if (show) {
-                const inp = document.getElementById('sn-url-' + id);
-                if (inp) inp.focus();
-            }
-        }
-
-        function addSideNoteLink(id) {
-            const note = currentSideNotes.find(n => n.id === id);
-            if (!note) return;
-            const urlEl = document.getElementById('sn-url-' + id);
-            const labelEl = document.getElementById('sn-label-' + id);
-            const url = urlEl ? urlEl.value.trim() : '';
-            if (!url) { showToast('リンクを入力してください'); return; }
-            if (!/^https?:\/\//i.test(url)) { showToast('http:// または https:// で始まるリンクを貼ってください'); return; }
-            if (!Array.isArray(note.links)) note.links = [];
-            note.links.push({ url: url, label: labelEl ? labelEl.value.trim() : '' });
-            renderSideNotes();
-            saveCurrentWeekData();
-            showToast('ふせんにリンクを添付しました');
-        }
-
-        function removeSideNoteLink(id, idx) {
-            const note = currentSideNotes.find(n => n.id === id);
-            if (!note || !Array.isArray(note.links)) return;
-            note.links.splice(idx, 1);
-            renderSideNotes();
-            saveCurrentWeekData();
         }
 
         function saveSidePanelLink() {
