@@ -2587,32 +2587,25 @@
                 const inMonth = d.getMonth() === m;
                 const items = (byDate[key] || []).slice().sort((a, b) => ((a.done ? 1 : 0) - (b.done ? 1 : 0)) || (a.dueTime || '').localeCompare(b.dueTime || '') || (a.createdAt || 0) - (b.createdAt || 0));
                 const isToday = key === today, isSel = key === taskCalSelected, dow = d.getDay();
-                let chips = items.slice(0, 3).map(t => {
+                let chips = items.slice(0, 6).map(t => {
                     const pri = taskPriorityLevel(t);
                     const dot = pri === 'high' ? '#ef4444' : (pri === 'mid' ? '#f59e0b' : (pri === 'low' ? '#0ea5e9' : '#94a3b8'));
                     const overdue = !t.done && key < today;
-                    return '<div onclick="event.stopPropagation(); openTaskPopup(\'' + t.id + '\', event)" title="' + escapeHtml(t.title) + '" class="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 cursor-pointer hover:opacity-80 ' + (key !== t.due ? 'opacity-70 ' : '') + (t.done ? 'text-slate-400 line-through bg-slate-50' : (overdue ? 'text-red-600 bg-red-50 font-bold' : (pri === 'high' ? 'text-red-800 bg-red-200' : (pri === 'mid' ? 'text-amber-800 bg-amber-200' : (pri === 'low' ? 'text-sky-800 bg-sky-200' : 'text-slate-700 bg-indigo-50'))))) + '"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:' + dot + '"></span><span class="truncate">' + escapeHtml(t.title) + '</span></div>';
+                    return '<div onclick="event.stopPropagation(); openTaskPopup(\'' + t.id + '\', event)" title="' + escapeHtml(t.title) + '" class="flex items-center gap-1.5 text-xs leading-tight rounded-md px-1.5 py-1 cursor-pointer hover:opacity-80 ' + (key !== t.due ? 'opacity-70 ' : '') + (t.done ? 'text-slate-400 line-through bg-slate-50' : (overdue ? 'text-red-600 bg-red-50 font-bold' : (pri === 'high' ? 'text-red-800 bg-red-200' : (pri === 'mid' ? 'text-amber-800 bg-amber-200' : (pri === 'low' ? 'text-sky-800 bg-sky-200' : 'text-slate-700 bg-indigo-50'))))) + '"><span class="w-2 h-2 rounded-full shrink-0" style="background:' + dot + '"></span><span class="truncate">' + escapeHtml(t.title) + '</span></div>';
                 }).join('');
-                if (items.length > 3) chips += '<div class="text-[10px] text-slate-400 font-bold px-1">＋' + (items.length - 3) + '件</div>';
-                cells += '<div onclick="selectTaskCalDay(\'' + key + '\')" class="cursor-pointer align-top border ' + (isSel ? 'border-indigo-400 bg-indigo-50/60' : 'border-slate-200 bg-white') + ' rounded-xl p-1.5 min-h-[4.6rem] flex flex-col gap-1 ' + (inMonth ? '' : 'opacity-40') + '">'
-                    + '<span class="text-xs font-bold ' + (isToday ? 'bg-indigo-500 text-white rounded-full w-5 h-5 flex items-center justify-center' : (dow === 0 ? 'text-red-500' : (dow === 6 ? 'text-blue-500' : 'text-slate-600'))) + '">' + d.getDate() + '</span>'
+                if (items.length > 6) chips += '<div class="text-[11px] text-slate-400 font-bold px-1">＋' + (items.length - 6) + '件</div>';
+                cells += '<div onclick="selectTaskCalDay(\'' + key + '\')" class="cursor-pointer align-top border ' + (isSel ? 'border-indigo-400 bg-indigo-50/60' : 'border-slate-200 bg-white') + ' rounded-xl p-2 min-h-[7.5rem] sm:min-h-[9.5rem] flex flex-col gap-1.5 ' + (inMonth ? '' : 'opacity-40') + '">'
+                    + '<span class="text-sm sm:text-base font-bold ' + (isToday ? 'bg-indigo-500 text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center' : (dow === 0 ? 'text-red-500' : (dow === 6 ? 'text-blue-500' : 'text-slate-600'))) + '">' + d.getDate() + '</span>'
                     + chips + '</div>';
             }
-            const wdHead = TASK_WD.map((w, i) => '<div class="text-center text-xs font-bold py-1 ' + (i === 0 ? 'text-red-500' : (i === 6 ? 'text-blue-500' : 'text-slate-500')) + '">' + w + '</div>').join('');
-            const selItems = (byDate[taskCalSelected] || []).slice().sort((a, b) => ((a.done ? 1 : 0) - (b.done ? 1 : 0)) || (a.createdAt || 0) - (b.createdAt || 0));
-            const selDate = taskParseDate(taskCalSelected);
-            const selLabel = selDate ? (selDate.getMonth() + 1) + '/' + selDate.getDate() + '（' + TASK_WD[selDate.getDay()] + '）' : '';
-            const detail = selItems.length
-                ? '<div class="space-y-2">' + selItems.map(t => taskRowHtml(t, !t.done && t.due < today)).join('') + '</div>'
-                : '<div class="text-sm text-slate-400 font-bold text-center py-3">この日のタスクはありません</div>';
+            const wdHead = TASK_WD.map((w, i) => '<div class="text-center text-sm font-bold py-1.5 ' + (i === 0 ? 'text-red-500' : (i === 6 ? 'text-blue-500' : 'text-slate-500')) + '">' + w + '</div>').join('');
             wrap.innerHTML = '<div class="flex items-center justify-between gap-2">'
                 + '<div class="flex gap-2">' + taskNavBtn('fa-chevron-left', 'shiftTaskCalMonth(-1)', '') + taskNavBtn('fa-chevron-right', 'shiftTaskCalMonth(1)', '') + '</div>'
                 + '<div class="font-bold text-slate-700 text-lg">' + y + '年' + (m + 1) + '月</div>'
                 + taskNavBtn('', 'goTaskCalToday()', '今月')
                 + '</div>'
-                + '<div class="grid grid-cols-7 gap-1">' + wdHead + cells + '</div>'
-                + '<div class="bg-white border border-slate-200 rounded-2xl p-3"><div class="font-bold text-slate-700 text-sm mb-2">' + selLabel + 'のタスク</div>' + detail + '</div>'
-                + '<p class="text-xs text-slate-400">期限のないタスクはカレンダーに出ません（リスト表示で見られます）。</p>';
+                + '<div class="grid grid-cols-7 gap-1.5">' + wdHead + cells + '</div>'
+                + '<p class="text-xs text-slate-400">タスクをタップすると詳細が吹き出しで出ます。期限のないタスクはカレンダーに出ません（リスト表示で見られます）。</p>';
         }
         function selectTaskCalDay(key) { taskCalSelected = key; renderTasks(); }
         function shiftTaskCalMonth(n) { if (!taskCalCursor) { const t = new Date(); taskCalCursor = new Date(t.getFullYear(), t.getMonth(), 1); } taskCalCursor = new Date(taskCalCursor.getFullYear(), taskCalCursor.getMonth() + n, 1); renderTasks(); }
