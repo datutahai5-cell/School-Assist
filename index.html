@@ -2969,12 +2969,12 @@
                 const frac = n / total;
                 segs += '<circle cx="100" cy="100" r="' + R + '" fill="none" stroke="' + c.color + '" stroke-width="34" stroke-dasharray="' + (frac * C) + ' ' + C + '" transform="rotate(' + (-90 + acc * 360) + ' 100 100)"></circle>';
                 acc += frac;
-                legend += '<div class="flex items-center gap-2 font-bold text-slate-700 text-sm"><span class="w-3.5 h-3.5 rounded" style="background:' + c.color + '"></span>' + c.name + ' <span class="text-slate-500">' + n + '件（' + Math.round(frac * 100) + '%）</span></div>';
+                legend += '<div class="flex items-center gap-2 font-bold text-slate-700 text-sm w-full"><span class="w-3.5 h-3.5 rounded shrink-0" style="background:' + c.color + '"></span>' + c.name + ' <span class="text-slate-500 ml-auto whitespace-nowrap">' + n + '件（' + Math.round(frac * 100) + '%）</span></div>';
             });
-            return '<div class="flex flex-col sm:flex-row items-center gap-4">'
+            return '<div class="flex flex-col items-center gap-4">'
                 + '<div class="relative shrink-0"><svg width="200" height="200" viewBox="0 0 200 200">' + segs + '</svg>'
                 + '<div class="absolute inset-0 flex flex-col items-center justify-center"><span class="text-2xl font-black text-slate-800">' + total + '件</span><span class="text-xs font-bold text-slate-500">宿題の合計</span></div></div>'
-                + '<div class="grid grid-cols-2 gap-x-5 gap-y-1.5">' + legend + '</div></div>';
+                + '<div class="flex flex-col gap-1.5 w-full">' + legend + '</div></div>';
         }
 
         function renderHomeworkCharts() {
