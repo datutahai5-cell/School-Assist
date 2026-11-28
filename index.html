@@ -345,6 +345,9 @@
             border-style: solid;
             border-color: transparent #334155 transparent transparent;
         }
+        .memo-note { position: relative; transform: rotate(var(--rot, 0deg)); transition: transform .15s ease, box-shadow .15s ease; }
+        .memo-note:hover { transform: rotate(0deg) scale(1.02); box-shadow: 0 12px 24px rgba(0,0,0,0.14); z-index: 2; }
+        .memo-note::before { content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); width: 76px; height: 20px; background: rgba(255,255,255,0.55); box-shadow: 0 1px 3px rgba(0,0,0,0.10); border-radius: 2px; }
     </style>
 </head>
 <body class="bg-amber-50/30 text-slate-800 min-h-screen p-3 sm:p-5 md:p-8 select-none">
@@ -718,7 +721,7 @@
                 <i class="fa-solid fa-plus"></i> メモを追加
             </button>
 
-            <div id="memoList" class="space-y-2.5"></div>
+            <div id="memoList" class="columns-2 md:columns-3 xl:columns-4 gap-4 pt-3"></div>
         </div>
 
         <!-- VIEW: MEMO FORM -->
@@ -2794,28 +2797,36 @@
             const wd = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
             return (d.getMonth() + 1) + '/' + d.getDate() + '（' + wd + '） ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         }
+        const MEMO_NOTE_COLORS = ['#fef08a', '#fbcfe8', '#bbf7d0', '#bae6fd', '#ddd6fe', '#fed7aa'];
+        function memoNoteStyle(m) {
+            let h = 0;
+            const str = String((m && m.id) || '');
+            for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+            const rots = [-1.2, -0.6, 0.5, 1.1, -0.3, 0.8];
+            return { color: MEMO_NOTE_COLORS[h % MEMO_NOTE_COLORS.length], rot: rots[Math.floor(h / 13) % rots.length] };
+        }
         function renderMemos() {
             const list = document.getElementById('memoList');
             if (!list) return;
             const summary = document.getElementById('memoSummary');
             if (summary) summary.textContent = schoolMemos.length + '件';
             if (!schoolMemos.length) {
-                list.innerHTML = '<p class="font-bold text-slate-400 text-center py-8">まだメモがありません。上のボタンから追加できます。</p>';
+                list.innerHTML = '<p class="[column-span:all] font-bold text-slate-400 text-center py-8">まだメモがありません。上のボタンから追加できます。</p>';
                 return;
             }
             const sorted = schoolMemos.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-            list.innerHTML = sorted.map(m =>
-                '<div class="bg-white border-2 border-slate-200 rounded-2xl px-4 py-3 shadow-sm">'
-                + '<div class="flex items-start gap-2">'
-                + '<div class="flex-1 min-w-0">'
-                + (m.title ? '<div class="font-bold text-slate-800 break-words">' + escapeHtml(m.title) + '</div>' : '')
-                + (m.body ? '<div class="text-sm text-slate-600 whitespace-pre-wrap break-words line-clamp-6 mt-0.5">' + escapeHtml(m.body) + '</div>' : '')
-                + '<div class="text-[11px] text-slate-400 mt-1.5">' + memoDateLabel(m.updatedAt) + '</div>'
-                + '</div>'
-                + '<button type="button" onclick="editMemo(\'' + m.id + '\')" title="編集" class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs transition"><i class="fa-solid fa-pen"></i></button>'
-                + '<button type="button" onclick="deleteMemo(\'' + m.id + '\')" title="削除" class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-500 text-xs transition"><i class="fa-solid fa-trash"></i></button>'
-                + '</div></div>'
-            ).join('');
+            list.innerHTML = sorted.map(m => {
+                const st = memoNoteStyle(m);
+                return '<div class="memo-note break-inside-avoid w-full rounded-lg shadow-md px-4 pt-5 pb-3.5 mb-4" style="background:' + st.color + '; --rot:' + st.rot + 'deg;">'
+                + (m.title ? '<div class="font-bold text-slate-800 break-words handwriting-title text-lg leading-snug">' + escapeHtml(m.title) + '</div>' : '')
+                + (m.body ? '<div class="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed mt-1">' + escapeHtml(m.body) + '</div>' : '')
+                + '<div class="flex items-center justify-between mt-3">'
+                + '<span class="text-[11px] font-bold text-slate-500">' + memoDateLabel(m.updatedAt) + '</span>'
+                + '<span class="flex gap-1.5">'
+                + '<button type="button" onclick="editMemo(\'' + m.id + '\')" title="編集" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white/60 hover:bg-white text-slate-600 text-xs transition shadow-sm"><i class="fa-solid fa-pen"></i></button>'
+                + '<button type="button" onclick="deleteMemo(\'' + m.id + '\')" title="削除" class="w-7 h-7 flex items-center justify-center rounded-lg bg-white/60 hover:bg-white text-slate-600 hover:text-red-500 text-xs transition shadow-sm"><i class="fa-solid fa-trash"></i></button>'
+                + '</span></div></div>';
+            }).join('');
         }
         function resetMemoForm() {
             memoEditId = null;
