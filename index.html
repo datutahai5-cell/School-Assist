@@ -810,7 +810,12 @@
                     </button>
                 </div>
 
-                <div class="relative">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="showMemosView()" class="bg-teal-500 hover:bg-teal-600 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 touch-target shadow-sm">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>メモ</span>
+                    </button>
+                    <div class="relative">
                     <button id="weekMenuBtn" type="button" onclick="toggleWeekMenu(event)" class="bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 touch-target">
                         <i class="fa-solid fa-bars"></i>
                         <span>メニュー</span>
@@ -822,6 +827,7 @@
                         <button type="button" id="hwToggleBtn" onclick="closeWeekMenu(); toggleHandwritingMode()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-slate-700 transition text-left touch-target hover:bg-amber-50"><i class="fa-solid fa-pen text-amber-600 w-5 text-center"></i>手書き</button>
                         <button type="button" id="clearBtn" onclick="closeWeekMenu(); clearCurrentWeekSchedule()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-red-600 transition text-left touch-target hover:bg-red-50"><i class="fa-solid fa-trash text-red-500 w-5 text-center"></i>クリア</button>
                         <button type="button" onclick="closeWeekMenu(); window.print()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-bold text-slate-700 transition text-left touch-target hover:bg-slate-100"><i class="fa-solid fa-print text-slate-500 w-5 text-center"></i>印刷/PDF</button>
+                    </div>
                     </div>
                 </div>
             </header>
