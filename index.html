@@ -583,18 +583,35 @@
                 <span id="taskSummary" class="text-xs sm:text-sm font-bold bg-white/15 rounded-xl px-3 py-2">未完了 0件</span>
             </header>
 
-            <div class="flex flex-wrap gap-2">
-                <button type="button" data-mode="list" onclick="setTaskView('list')" class="task-view-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition touch-target"><i class="fa-solid fa-list-ul"></i> リスト</button>
-                <button type="button" data-mode="calendar" onclick="setTaskView('calendar')" class="task-view-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition touch-target"><i class="fa-regular fa-calendar-days"></i> カレンダー</button>
-                <button type="button" data-mode="week" onclick="setTaskView('week')" class="task-view-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition touch-target"><i class="fa-solid fa-calendar-week"></i> 週</button>
-                <button type="button" data-mode="gantt" onclick="setTaskView('gantt')" class="task-view-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition touch-target"><i class="fa-solid fa-bars-staggered"></i> ガント</button>
-                <button type="button" onclick="openTaskForm()" class="ml-auto bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm px-4 py-2 rounded-xl shadow-sm transition touch-target"><i class="fa-solid fa-plus"></i> タスクを追加</button>
-            </div>
+            <div class="flex flex-col lg:flex-row gap-4 items-start">
+                <aside class="w-full lg:w-60 shrink-0 space-y-5">
+                    <div>
+                        <div class="text-xs font-bold text-slate-400 mb-1.5 px-1">表示</div>
+                        <div class="flex flex-wrap lg:flex-col gap-1.5">
+                            <button type="button" data-mode="list" onclick="setTaskView('list')" class="task-view-btn flex items-center gap-2 font-bold text-sm px-3.5 py-2 rounded-xl border-2 transition touch-target lg:w-full text-left"><i class="fa-solid fa-list-ul"></i> リスト</button>
+                            <button type="button" data-mode="calendar" onclick="setTaskView('calendar')" class="task-view-btn flex items-center gap-2 font-bold text-sm px-3.5 py-2 rounded-xl border-2 transition touch-target lg:w-full text-left"><i class="fa-regular fa-calendar-days"></i> カレンダー</button>
+                            <button type="button" data-mode="week" onclick="setTaskView('week')" class="task-view-btn flex items-center gap-2 font-bold text-sm px-3.5 py-2 rounded-xl border-2 transition touch-target lg:w-full text-left"><i class="fa-solid fa-calendar-week"></i> 週</button>
+                            <button type="button" data-mode="gantt" onclick="setTaskView('gantt')" class="task-view-btn flex items-center gap-2 font-bold text-sm px-3.5 py-2 rounded-xl border-2 transition touch-target lg:w-full text-left"><i class="fa-solid fa-bars-staggered"></i> ガント</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400 mb-1.5 px-1">タグ</div>
+                        <div id="taskTagList" class="flex flex-wrap lg:flex-col gap-1.5"></div>
+                    </div>
+                </aside>
 
-            <div id="taskList" class="space-y-5"></div>
-            <div id="taskCalendarView" class="hidden space-y-3"></div>
-            <div id="taskWeekView" class="hidden space-y-3"></div>
-            <div id="taskGanttView" class="hidden space-y-3"></div>
+                <div class="flex-1 w-full min-w-0 space-y-3">
+                    <button type="button" onclick="openTaskForm()" class="w-full flex items-center gap-2 bg-white border-2 border-slate-200 hover:border-indigo-300 text-slate-400 hover:text-indigo-500 font-bold rounded-2xl px-4 py-2.5 text-sm transition touch-target text-left">
+                        <i class="fa-solid fa-plus"></i> タスクを追加
+                    </button>
+                    <div id="taskList" class="space-y-4"></div>
+                    <div id="taskCalendarView" class="hidden space-y-3"></div>
+                    <div id="taskWeekView" class="hidden space-y-3"></div>
+                    <div id="taskGanttView" class="hidden space-y-3"></div>
+                </div>
+
+                <div id="taskDetailPanel" class="hidden w-full lg:w-80 shrink-0"></div>
+            </div>
         </div>
 
         <!-- タスク追加・編集ビュー -->
@@ -1947,6 +1964,8 @@
             const sunday = taskWeekEndStr();
             const undone = schoolTasks.filter(t => !t.done);
             if (summary) summary.textContent = '未完了 ' + undone.length + '件';
+            renderTaskSidebarTags();
+            renderTaskDetail();
             document.querySelectorAll('.task-view-btn').forEach(b => {
                 const on = b.dataset && b.dataset.mode === taskViewMode;
                 b.style.borderColor = on ? '#6366f1' : '#e2e8f0';
@@ -1975,7 +1994,7 @@
             ];
             const byKey = {};
             groups.forEach(g => { byKey[g.key] = g; });
-            const sorted = schoolTasks.slice().sort((a, b) => {
+            const sorted = visibleTasks().slice().sort((a, b) => {
                 const da = a.due || '9999-99-99';
                 const db = b.due || '9999-99-99';
                 if (da !== db) return da < db ? -1 : 1;
@@ -1995,13 +2014,14 @@
             byKey.waiting.items.sort((a, b) => (a.start !== b.start) ? (a.start < b.start ? -1 : 1) : ((a.createdAt || 0) - (b.createdAt || 0)));
             byKey.done.items.sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
             if (!schoolTasks.length) {
-                list.innerHTML = '<p class="font-bold text-slate-400 text-center py-8">まだタスクがありません。上のフォームから追加できます。</p>';
+                list.innerHTML = '<p class="font-bold text-slate-400 text-center py-8">まだタスクがありません。上の「タスクを追加」から追加できます。</p>';
                 return;
             }
-            list.innerHTML = groups.filter(g => g.items.length).map(g =>
+            const anyItems = groups.some(g => g.items.length);
+            list.innerHTML = anyItems ? groups.filter(g => g.items.length).map(g =>
                 '<section><h3 class="font-bold ' + g.cls + ' mb-2">' + g.label + '（' + g.items.length + '）</h3>'
-                + '<div class="space-y-2">' + g.items.map(t => taskRowHtml(t, g.key === 'overdue')).join('') + '</div></section>'
-            ).join('');
+                + '<div class="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">' + g.items.map(t => taskSimpleRowHtml(t)).join('') + '</div></section>'
+            ).join('') : '<p class="font-bold text-slate-400 text-center py-8">このタグのタスクはありません。</p>';
         }
         // ===== タスク入力フォーム（アイコン方式） =====
         const TASK_TAGS_KEY = 'edu_task_tags';
@@ -2348,6 +2368,97 @@
         }
 
 
+
+        // ===== タスク画面のサイドバー・詳細パネル =====
+        let taskSelectedId = null;
+        let taskTagFilter = '';
+        function visibleTasks() {
+            if (!taskTagFilter) return schoolTasks;
+            return schoolTasks.filter(t => (Array.isArray(t.tags) ? t.tags : []).includes(taskTagFilter));
+        }
+        function setTaskTagFilter(nm) {
+            taskTagFilter = (taskTagFilter === nm) ? '' : nm;
+            renderTasks();
+        }
+        function renderTaskSidebarTags() {
+            const wrap = document.getElementById('taskTagList');
+            if (!wrap) return;
+            const names = [];
+            loadTaskTags();
+            taskTagRegistry.forEach(n => { if (!names.includes(n)) names.push(n); });
+            schoolTasks.forEach(t => (Array.isArray(t.tags) ? t.tags : []).forEach(n => { if (!names.includes(n)) names.push(n); }));
+            let html = '';
+            if (taskTagFilter) {
+                html += '<button type="button" onclick="setTaskTagFilter(\'\')" class="flex items-center gap-2 font-bold text-sm px-3 py-2 rounded-xl border-2 border-indigo-300 bg-indigo-50 text-indigo-700 transition touch-target lg:w-full text-left"><i class="fa-solid fa-xmark"></i>すべて表示</button>';
+            }
+            if (!names.length) {
+                html += '<p class="text-xs text-slate-400 font-bold px-1 py-1">タグはまだありません</p>';
+            }
+            html += names.map(nm => {
+                const cnt = schoolTasks.filter(t => !t.done && (Array.isArray(t.tags) ? t.tags : []).includes(nm)).length;
+                const on = taskTagFilter === nm;
+                return '<button type="button" onclick="setTaskTagFilter(\'' + escapeHtml(nm) + '\')" class="flex items-center gap-2 font-bold text-sm px-3 py-2 rounded-xl border-2 transition touch-target lg:w-full ' + (on ? 'border-indigo-400 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200') + '"><i class="fa-solid fa-tag ' + (on ? 'text-indigo-400' : 'text-slate-300') + '"></i><span class="flex-1 text-left truncate">' + escapeHtml(nm) + '</span><span class="text-xs font-bold ' + (on ? 'text-indigo-400' : 'text-slate-400') + '">' + cnt + '</span></button>';
+            }).join('');
+            wrap.innerHTML = html;
+        }
+        function taskSimpleRowHtml(t) {
+            const lvl = taskPriorityLevel(t);
+            const barColors = { high: '#ef4444', mid: '#f59e0b', low: '#0ea5e9', none: '#e2e8f0' };
+            const bar = t.done ? '#cbd5e1' : barColors[lvl];
+            const chkBorders = { high: 'border-red-400', mid: 'border-amber-400', low: 'border-sky-400', none: 'border-slate-300' };
+            const chk = t.done ? 'bg-indigo-500 border-indigo-500 text-white' : ('bg-white text-transparent hover:border-indigo-400 ' + chkBorders[lvl]);
+            const sel = taskSelectedId === t.id;
+            const subArr = Array.isArray(t.subtasks) ? t.subtasks : [];
+            const subInfo = subArr.length ? '<span class="text-[11px] font-bold text-slate-400 shrink-0"><i class="fa-solid fa-list-check"></i> ' + subArr.filter(x => x.done).length + '/' + subArr.length + '</span>' : '';
+            const tagChips = (Array.isArray(t.tags) ? t.tags : []).map(nm => '<span class="text-[11px] font-bold bg-slate-100 text-slate-500 rounded-full px-2 py-0.5 shrink-0 hidden sm:inline-block">' + escapeHtml(nm) + '</span>').join('');
+            const startInfo = (t.start && !t.done && t.start > taskTodayStr()) ? '<span class="text-[11px] font-bold text-teal-600 shrink-0">' + escapeHtml(taskStartLabel(t.start)) + 'から開始</span>' : '';
+            return '<div onclick="selectTaskDetail(\'' + t.id + '\')" class="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition ' + (sel ? 'bg-indigo-50' : 'bg-white hover:bg-slate-50') + '" style="border-left:5px solid ' + bar + '">'
+                + '<button type="button" onclick="event.stopPropagation(); toggleTaskDone(\'' + t.id + '\')" class="w-5 h-5 shrink-0 flex items-center justify-center rounded-md border-2 text-[10px] transition ' + chk + '"><i class="fa-solid fa-check"></i></button>'
+                + '<span class="flex-1 min-w-0 truncate font-bold text-sm ' + (t.done ? 'line-through text-slate-400' : 'text-slate-700') + '" title="' + escapeHtml(t.title) + '">' + escapeHtml(t.title) + '</span>'
+                + subInfo + tagChips + startInfo
+                + (t.driveLink ? '<i class="fa-brands fa-google-drive text-emerald-500 shrink-0"></i>' : '')
+                + (t.repeat ? '<i class="fa-solid fa-repeat text-slate-300 text-xs shrink-0"></i>' : '')
+                + taskDueBadgeHtml(t)
+                + '</div>';
+        }
+        function selectTaskDetail(id) { taskSelectedId = id; renderTasks(); }
+        function clearTaskDetail() { taskSelectedId = null; renderTasks(); }
+        function renderTaskDetail() {
+            const panel = document.getElementById('taskDetailPanel');
+            if (!panel) return;
+            const t = schoolTasks.find(x => x.id === taskSelectedId);
+            if (!t) { taskSelectedId = null; panel.classList.add('hidden'); panel.innerHTML = ''; return; }
+            panel.classList.remove('hidden');
+            const lvl = taskPriorityLevel(t);
+            const meta = TASK_PRI_META[lvl];
+            const subArr = Array.isArray(t.subtasks) ? t.subtasks : [];
+            const subDone = subArr.filter(x => x.done).length;
+            const subsHtml = subArr.length ? '<div class="space-y-1.5">' + subArr.map(st =>
+                '<div class="flex items-center gap-2">'
+                + '<button type="button" onclick="toggleSubtaskDone(\'' + t.id + '\', \'' + st.id + '\')" class="w-5 h-5 shrink-0 flex items-center justify-center rounded-md border-2 text-[9px] transition ' + (st.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + '"><i class="fa-solid fa-check"></i></button>'
+                + '<span class="text-sm break-words ' + (st.done ? 'line-through text-slate-400' : 'text-slate-700') + '">' + escapeHtml(st.title) + '</span></div>'
+            ).join('') + '</div>' : '<p class="text-sm text-slate-400">サブタスクはありません</p>';
+            const tagsHtml = (Array.isArray(t.tags) && t.tags.length) ? '<div class="flex flex-wrap gap-1.5">' + t.tags.map(nm => '<span class="text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded-full px-2 py-0.5"><i class="fa-solid fa-tag text-slate-400 mr-0.5"></i>' + escapeHtml(nm) + '</span>').join('') + '</div>' : '';
+            const startHtml = t.start ? '<div class="text-sm font-bold text-teal-600"><i class="fa-solid fa-play text-[10px]"></i> 開始：' + escapeHtml(taskStartLabel(t.start)) + '</div>' : '';
+            const repeatHtml = t.repeat ? '<div class="text-sm font-bold text-slate-500"><i class="fa-solid fa-repeat"></i> 繰り返し：' + (t.repeat === 'weekly' ? '毎週' : '毎月') + '</div>' : '';
+            const driveHtml = t.driveLink ? '<a href="' + escapeHtml(t.driveLink.url) + '" target="_blank" rel="noopener" class="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-sm rounded-xl px-3 py-2.5 transition"><i class="fa-brands fa-google-drive text-lg"></i><span class="flex-1 min-w-0 truncate">' + escapeHtml(t.driveLink.name || 'ドライブの資料') + '</span><i class="fa-solid fa-arrow-up-right-from-square text-xs"></i></a>' : '<p class="text-sm text-slate-400">添付資料はありません</p>';
+            panel.innerHTML = '<div class="bg-white border-2 border-slate-200 rounded-2xl p-4 space-y-4 lg:sticky lg:top-4 shadow-sm">'
+                + '<div class="flex items-center justify-between"><span class="text-xs font-bold text-slate-400">タスクの詳細</span>'
+                + '<button type="button" onclick="clearTaskDetail()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 transition"><i class="fa-solid fa-xmark"></i></button></div>'
+                + '<div class="flex items-start gap-2.5">'
+                + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" class="mt-0.5 w-6 h-6 shrink-0 flex items-center justify-center rounded-md border-2 text-xs transition ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + '"><i class="fa-solid fa-check"></i></button>'
+                + '<h3 class="flex-1 min-w-0 font-bold text-lg break-words ' + (t.done ? 'line-through text-slate-400' : 'text-slate-800') + '">' + escapeHtml(t.title) + '</h3></div>'
+                + '<div class="flex flex-wrap items-center gap-2">' + taskDueBadgeHtml(t) + '<span class="inline-flex items-center gap-1 text-[13px] font-bold" style="color:' + meta.color + '"><i class="fa-solid fa-flag"></i>' + (lvl === 'none' ? '優先度なし' : '優先度：' + meta.label) + '</span></div>'
+                + startHtml + repeatHtml + tagsHtml
+                + '<div><div class="text-xs font-bold text-slate-400 mb-1">説明</div><p class="text-sm text-slate-600 whitespace-pre-wrap break-words">' + (t.memo ? escapeHtml(t.memo) : '<span class="text-slate-400">説明はありません</span>') + '</p></div>'
+                + '<div><div class="text-xs font-bold text-slate-400 mb-1.5">サブタスク（' + subDone + '/' + subArr.length + '）</div>' + subsHtml + '</div>'
+                + '<div><div class="text-xs font-bold text-slate-400 mb-1.5">添付資料（Googleドライブ）</div>' + driveHtml + '</div>'
+                + '<div class="flex gap-2 pt-1">'
+                + '<button type="button" onclick="editTask(\'' + t.id + '\')" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm rounded-xl px-3 py-2.5 transition touch-target"><i class="fa-solid fa-pen"></i> 編集</button>'
+                + '<button type="button" onclick="deleteTask(\'' + t.id + '\')" class="bg-white hover:bg-red-50 border-2 border-slate-200 hover:border-red-300 text-slate-500 hover:text-red-500 font-bold text-sm rounded-xl px-3 py-2.5 transition touch-target"><i class="fa-solid fa-trash"></i> 削除</button>'
+                + '</div></div>';
+        }
+
         // ===== タスクの表示切り替え（カレンダー／週／ガント） =====
         let taskViewMode = 'list';
         try { const v = localStorage.getItem('edu_task_view'); if (v && ['list', 'calendar', 'week', 'gantt'].includes(v)) taskViewMode = v; } catch (e) {}
@@ -2388,7 +2499,7 @@
             const daysInMonth = new Date(y, m + 1, 0).getDate();
             const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
             const byDate = {};
-            schoolTasks.forEach(t => {
+            visibleTasks().forEach(t => {
                 const s = t.start || t.due, e = t.due || t.start;
                 if (!s || !e) return;
                 const sd = taskParseDate(s), ed = taskParseDate(e);
@@ -2458,14 +2569,14 @@
             const rangeLabel = (monday.getMonth() + 1) + '/' + monday.getDate() + ' 〜 ' + (days[6].getMonth() + 1) + '/' + days[6].getDate();
             const cols = days.map(d => {
                 const key = taskDateStr(d);
-                const items = schoolTasks.filter(t => taskCoversDate(t, key)).sort((a, b) => ((a.done ? 1 : 0) - (b.done ? 1 : 0)) || (a.dueTime || '').localeCompare(b.dueTime || '') || (a.createdAt || 0) - (b.createdAt || 0));
+                const items = visibleTasks().filter(t => taskCoversDate(t, key)).sort((a, b) => ((a.done ? 1 : 0) - (b.done ? 1 : 0)) || (a.dueTime || '').localeCompare(b.dueTime || '') || (a.createdAt || 0) - (b.createdAt || 0));
                 const isToday = key === today, dow = d.getDay();
                 const cards = items.length ? items.map(t => taskWeekCardHtml(t, key < today, key)).join('') : '<div class="text-[11px] text-slate-300 text-center py-2">なし</div>';
                 return '<div class="min-w-[9.5rem] flex-1 flex flex-col gap-1.5">'
                     + '<div class="text-center text-xs font-bold rounded-lg py-1.5 ' + (isToday ? 'bg-indigo-500 text-white' : (dow === 0 ? 'bg-red-50 text-red-500' : (dow === 6 ? 'bg-blue-50 text-blue-500' : 'bg-slate-100 text-slate-600'))) + '">' + TASK_WD[dow] + ' ' + (d.getMonth() + 1) + '/' + d.getDate() + '</div>'
                     + cards + '</div>';
             }).join('');
-            const nodue = schoolTasks.filter(t => !t.due && !t.done);
+            const nodue = visibleTasks().filter(t => !t.due && !t.done);
             const nodueHtml = nodue.length
                 ? '<div><div class="font-bold text-slate-500 text-sm mb-1.5">期限なし</div><div class="flex flex-wrap gap-1.5">' + nodue.map(t => '<div class="w-56 max-w-full">' + taskWeekCardHtml(t, false) + '</div>').join('') + '</div></div>'
                 : '';
@@ -2492,7 +2603,7 @@
             const endKey = taskDateStr(days[GANTT_DAYS - 1]);
             const idxOf = str => { const d = taskParseDate(str); return d ? Math.round((d - startD) / 86400000) : -1; };
             const todayIdx = idxOf(today);
-            const rows = schoolTasks.filter(t => {
+            const rows = visibleTasks().filter(t => {
                 if (!t.start && !t.due) return false;
                 const s = t.start || t.due, e = t.due || endKey;
                 return e >= taskGanttStart && s <= endKey;
