@@ -4207,11 +4207,60 @@
             renderSidePanelTasks();
         }
 
+        let sideTaskExpandedId = null;
+        let sideTaskExpandedKey = '';
+        function toggleSideTaskExpand(id) {
+            sideTaskExpandedId = (sideTaskExpandedId === id) ? null : id;
+            renderSidePanelTasks();
+        }
+        function sideTaskRowHtml(t) {
+            const expanded = sideTaskExpandedId === t.id;
+            const border = taskCardClasses(t, false);
+            const lvl = taskPriorityLevel(t);
+            const priFlag = lvl === 'high' ? '<i class="fa-solid fa-flag text-red-500 text-xs shrink-0" title="優先度：高"></i>' : (lvl === 'mid' ? '<i class="fa-solid fa-flag text-amber-500 text-xs shrink-0" title="優先度：中"></i>' : (lvl === 'low' ? '<i class="fa-solid fa-flag text-sky-500 text-xs shrink-0" title="優先度：低"></i>' : ''));
+            const badge = taskDueBadgeHtml(t);
+            const driveBtn = (t.driveLink && t.driveLink.url) ? '<a href="' + escapeHtml(t.driveLink.url) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="資料を開く" class="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-500 text-white rounded-full px-2.5 py-1 hover:bg-emerald-600 transition shadow-sm"><i class="fa-brands fa-google-drive"></i>' + escapeHtml(t.driveLink.name || '資料') + '</a>' : '';
+            let html = '<div class="border-2 ' + border + ' rounded-xl shadow-sm overflow-hidden">'
+                + '<div class="flex items-center gap-2 px-2.5 py-2 cursor-pointer" onclick="toggleSideTaskExpand(\'' + t.id + '\')">'
+                + '<button type="button" onclick="event.stopPropagation(); toggleTaskDone(\'' + t.id + '\')" title="' + (t.done ? '未完了に戻す' : '完了にする') + '" class="w-5 h-5 shrink-0 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + ' text-[10px] transition"><i class="fa-solid fa-check"></i></button>'
+                + '<span class="flex-1 min-w-0 truncate font-bold text-sm ' + (t.done ? 'line-through text-slate-400' : 'text-slate-800') + '">' + escapeHtml(t.title) + '</span>'
+                + priFlag
+                + (t.repeat ? '<i class="fa-solid fa-repeat text-slate-400 text-xs shrink-0" title="繰り返し"></i>' : '')
+                + (badge ? '<span class="shrink-0">' + badge + '</span>' : '')
+                + driveBtn
+                + '<i class="fa-solid ' + (expanded ? 'fa-chevron-up' : 'fa-chevron-down') + ' text-[10px] text-slate-400 shrink-0"></i>'
+                + '</div>';
+            if (expanded) {
+                const startChip = (t.start && t.due && !t.done && t.start > taskTodayStr()) ? '<span class="text-[11px] font-bold text-teal-600">' + escapeHtml(taskStartLabel(t.start)) + 'から開始</span>' : '';
+                const tagArr = Array.isArray(t.tags) ? t.tags : [];
+                const subArr = Array.isArray(t.subtasks) ? t.subtasks : [];
+                html += '<div class="px-3 pb-3 pt-2 border-t border-black/5">'
+                    + ((badge || startChip) ? '<div class="flex flex-wrap items-center gap-1.5">' + badge + startChip + '</div>' : '')
+                    + (t.memo ? '<div class="text-xs text-slate-600 mt-1.5 break-words whitespace-pre-wrap">' + escapeHtml(t.memo) + '</div>' : '')
+                    + (tagArr.length ? '<div class="flex flex-wrap gap-1.5 mt-1.5">' + tagArr.map(nm => '<span class="text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded-full px-2 py-0.5"><i class="fa-solid fa-tag text-slate-400 mr-0.5"></i>' + escapeHtml(nm) + '</span>').join('') + '</div>' : '');
+                if (subArr.length) {
+                    const doneCount = subArr.filter(x => x.done).length;
+                    html += '<div class="mt-2"><div class="text-[11px] font-bold text-slate-400 mb-1">サブタスク ' + doneCount + '/' + subArr.length + '</div><div class="space-y-1">'
+                        + subArr.map(st => '<div class="flex items-center gap-1.5"><button type="button" onclick="toggleSubtaskDone(\'' + t.id + '\', \'' + st.id + '\')" class="w-4 h-4 shrink-0 flex items-center justify-center rounded border-2 ' + (st.done ? 'bg-indigo-400 border-indigo-400 text-white' : 'bg-white border-slate-300 text-transparent') + ' text-[8px] transition"><i class="fa-solid fa-check"></i></button><span class="text-xs break-words ' + (st.done ? 'line-through text-slate-400' : 'text-slate-600') + '">' + escapeHtml(st.title) + '</span></div>').join('')
+                        + '</div></div>';
+                }
+                if (t.driveLink && t.driveLink.url) {
+                    html += '<a href="' + escapeHtml(t.driveLink.url) + '" target="_blank" rel="noopener" class="mt-2.5 flex items-center justify-center gap-1.5 text-xs font-bold bg-emerald-500 text-white rounded-xl px-3 py-2 hover:bg-emerald-600 transition"><i class="fa-brands fa-google-drive"></i>' + escapeHtml(t.driveLink.name || 'ドライブの資料') + 'を開く</a>';
+                }
+                html += '<div class="flex gap-2 mt-2.5">'
+                    + '<button type="button" onclick="editTask(\'' + t.id + '\')" class="flex-1 flex items-center justify-center gap-1 text-xs font-bold bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl px-3 py-2 hover:bg-indigo-100 transition"><i class="fa-solid fa-pen"></i>編集</button>'
+                    + '<button type="button" onclick="deleteTask(\'' + t.id + '\')" class="flex-1 flex items-center justify-center gap-1 text-xs font-bold bg-red-50 text-red-500 border border-red-200 rounded-xl px-3 py-2 hover:bg-red-100 transition"><i class="fa-solid fa-trash"></i>削除</button>'
+                    + '</div></div>';
+            }
+            return html + '</div>';
+        }
+
         function renderSidePanelTasks() {
             const list = document.getElementById('sideTaskList');
             if (!list) return;
             const f = sidePanelFocusDate();
             const key = getDateKey(f.date);
+            if (sideTaskExpandedKey !== key) { sideTaskExpandedKey = key; sideTaskExpandedId = null; }
             const items = schoolTasks.filter(t => taskCoversDate(t, key)).sort((a, b) => {
                 if (!!a.done !== !!b.done) return a.done ? 1 : -1;
                 const da = a.due || '9999-99-99', db = b.due || '9999-99-99';
@@ -4224,7 +4273,7 @@
                 list.innerHTML = '<p class="text-xs text-slate-400 font-bold text-center py-6">この日のタスクはありません</p>';
                 return;
             }
-            list.innerHTML = items.map(t => taskRowHtml(t, false)).join('');
+            list.innerHTML = items.map(t => sideTaskRowHtml(t)).join('');
         }
 
         function openTaskFormForSidePanelDay() {
