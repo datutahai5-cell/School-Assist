@@ -1884,11 +1884,11 @@
             return '<span class="inline-flex items-center gap-1 text-[13px] font-bold rounded-lg px-2 py-0.5" style="' + style + '"><i class="fa-regular fa-calendar-days"></i>' + escapeHtml(main) + (rel ? '<span class="text-[11px]">（' + rel + '）</span>' : '') + '</span>';
         }
         function taskCardClasses(t, isOverdue) {
-            if (t.done) return 'bg-slate-50 border-slate-200';
+            if (t.done) return 'bg-slate-100 border-slate-300';
             const lvl = taskPriorityLevel(t);
-            if (lvl === 'high') return 'bg-red-50 ' + (isOverdue ? 'border-red-400' : 'border-red-300');
-            if (lvl === 'mid') return 'bg-amber-50 border-amber-300';
-            if (lvl === 'low') return 'bg-sky-50 border-sky-300';
+            if (lvl === 'high') return 'bg-red-200 ' + (isOverdue ? 'border-red-500' : 'border-red-400');
+            if (lvl === 'mid') return 'bg-amber-200 border-amber-400';
+            if (lvl === 'low') return 'bg-sky-200 border-sky-400';
             return 'bg-white ' + (isOverdue ? 'border-red-300' : 'border-slate-200');
         }
         function taskCoversDate(t, key) {
@@ -2408,7 +2408,7 @@
                     const pri = taskPriorityLevel(t);
                     const dot = pri === 'high' ? '#ef4444' : (pri === 'mid' ? '#f59e0b' : (pri === 'low' ? '#0ea5e9' : '#94a3b8'));
                     const overdue = !t.done && key < today;
-                    return '<div class="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 ' + (key !== t.due ? 'opacity-70 ' : '') + (t.done ? 'text-slate-400 line-through bg-slate-50' : (overdue ? 'text-red-600 bg-red-50 font-bold' : (pri === 'high' ? 'text-red-700 bg-red-100' : (pri === 'mid' ? 'text-amber-700 bg-amber-100' : (pri === 'low' ? 'text-sky-700 bg-sky-100' : 'text-slate-700 bg-indigo-50'))))) + '"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:' + dot + '"></span><span class="truncate">' + escapeHtml(t.title) + '</span></div>';
+                    return '<div class="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 ' + (key !== t.due ? 'opacity-70 ' : '') + (t.done ? 'text-slate-400 line-through bg-slate-50' : (overdue ? 'text-red-600 bg-red-50 font-bold' : (pri === 'high' ? 'text-red-800 bg-red-200' : (pri === 'mid' ? 'text-amber-800 bg-amber-200' : (pri === 'low' ? 'text-sky-800 bg-sky-200' : 'text-slate-700 bg-indigo-50'))))) + '"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:' + dot + '"></span><span class="truncate">' + escapeHtml(t.title) + '</span></div>';
                 }).join('');
                 if (items.length > 3) chips += '<div class="text-[10px] text-slate-400 font-bold px-1">＋' + (items.length - 3) + '件</div>';
                 cells += '<div onclick="selectTaskCalDay(\'' + key + '\')" class="cursor-pointer align-top border ' + (isSel ? 'border-indigo-400 bg-indigo-50/60' : 'border-slate-200 bg-white') + ' rounded-xl p-1.5 min-h-[4.6rem] flex flex-col gap-1 ' + (inMonth ? '' : 'opacity-40') + '">'
