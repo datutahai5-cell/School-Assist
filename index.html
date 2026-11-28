@@ -1914,7 +1914,8 @@
             if (!s || !e) return false;
             return s <= key && key <= e;
         }
-        function taskRowHtml(t, isOverdue) {
+        function taskRowHtml(t, isOverdue, opts) {
+            const slim = !!(opts && opts.slim);
             const border = taskCardClasses(t, isOverdue);
             const badge = taskDueBadgeHtml(t);
             const startChip = (t.start && t.due && !t.done && t.start > taskTodayStr()) ? '<span class="text-[11px] font-bold text-teal-600">' + escapeHtml(taskStartLabel(t.start)) + 'から開始</span>' : '';
@@ -1924,15 +1925,15 @@
             const priFlag = lvl === 'high' ? ' <i class="fa-solid fa-flag text-red-500 text-xs" title="優先度：高"></i>' : (lvl === 'mid' ? ' <i class="fa-solid fa-flag text-amber-500 text-xs" title="優先度：中"></i>' : (lvl === 'low' ? ' <i class="fa-solid fa-flag text-sky-500 text-xs" title="優先度：低"></i>' : ''));
             let meta = '';
             const tagArr = Array.isArray(t.tags) ? t.tags : [];
-            if (tagArr.length || t.driveLink) {
+            if (tagArr.length || (t.driveLink && !slim)) {
                 meta = '<div class="flex flex-wrap gap-1.5 mt-1.5">'
                     + tagArr.map(nm => '<span class="text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 rounded-full px-2 py-0.5"><i class="fa-solid fa-tag text-slate-400 mr-0.5"></i>' + escapeHtml(nm) + '</span>').join('')
-                    + (t.driveLink ? '<a href="' + escapeHtml(t.driveLink.url) + '" target="_blank" rel="noopener" class="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5 hover:bg-emerald-100 transition"><i class="fa-brands fa-google-drive mr-0.5"></i>' + escapeHtml(t.driveLink.name || 'ドライブの資料') + '</a>' : '')
+                    + (t.driveLink && !slim ? '<a href="' + escapeHtml(t.driveLink.url) + '" target="_blank" rel="noopener" class="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5 hover:bg-emerald-100 transition"><i class="fa-brands fa-google-drive mr-0.5"></i>' + escapeHtml(t.driveLink.name || 'ドライブの資料') + '</a>' : '')
                     + '</div>';
             }
             const subArr = Array.isArray(t.subtasks) ? t.subtasks : [];
             let subs = '';
-            if (subArr.length) {
+            if (subArr.length && !slim) {
                 const doneCount = subArr.filter(x => x.done).length;
                 subs = '<div class="mt-1.5">'
                     + '<div class="text-[11px] font-bold text-slate-400 mb-1">サブタスク ' + doneCount + '/' + subArr.length + '</div>'
@@ -2022,7 +2023,7 @@
             const anyItems = groups.some(g => g.items.length);
             list.innerHTML = anyItems ? groups.filter(g => g.items.length).map(g =>
                 '<section><h3 class="font-bold ' + g.cls + ' mb-2">' + g.label + '（' + g.items.length + '）</h3>'
-                + '<div class="space-y-2">' + g.items.map(t => '<div onclick="selectTaskDetail(\'' + t.id + '\')" class="cursor-pointer ' + (taskSelectedId === t.id ? 'ring-2 ring-indigo-400 rounded-2xl' : '') + '">' + taskRowHtml(t, g.key === 'overdue') + '</div>').join('') + '</div></section>'
+                + '<div class="space-y-2">' + g.items.map(t => '<div onclick="selectTaskDetail(\'' + t.id + '\')" class="cursor-pointer ' + (taskSelectedId === t.id ? 'ring-2 ring-indigo-400 rounded-2xl' : '') + '">' + taskRowHtml(t, g.key === 'overdue', { slim: true }) + '</div>').join('') + '</div></section>'
             ).join('') : '<p class="font-bold text-slate-400 text-center py-8">このタグのタスクはありません。</p>';
         }
         // ===== タスク入力フォーム（アイコン方式） =====
