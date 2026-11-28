@@ -585,15 +585,12 @@
                 <span id="taskSummary" class="text-xs sm:text-sm font-bold bg-white/15 rounded-xl px-3 py-2">未完了 0件</span>
             </header>
 
-            <button type="button" onclick="openTaskForm()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-2xl px-5 py-3.5 text-base shadow transition touch-target">
-                <i class="fa-solid fa-plus"></i> タスクを追加
-            </button>
-
             <div class="flex flex-wrap gap-2">
                 <button type="button" data-mode="list" onclick="setTaskView('list')" class="task-view-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition touch-target"><i class="fa-solid fa-list-ul"></i> リスト</button>
                 <button type="button" data-mode="calendar" onclick="setTaskView('calendar')" class="task-view-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition touch-target"><i class="fa-regular fa-calendar-days"></i> カレンダー</button>
                 <button type="button" data-mode="week" onclick="setTaskView('week')" class="task-view-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition touch-target"><i class="fa-solid fa-calendar-week"></i> 週</button>
                 <button type="button" data-mode="gantt" onclick="setTaskView('gantt')" class="task-view-btn font-bold text-sm px-4 py-2 rounded-xl border-2 transition touch-target"><i class="fa-solid fa-bars-staggered"></i> ガント</button>
+                <button type="button" onclick="openTaskForm()" class="ml-auto bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm px-4 py-2 rounded-xl shadow-sm transition touch-target"><i class="fa-solid fa-plus"></i> タスクを追加</button>
             </div>
 
             <div id="taskList" class="space-y-5"></div>
