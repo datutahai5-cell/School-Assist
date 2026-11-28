@@ -2022,7 +2022,7 @@
             const anyItems = groups.some(g => g.items.length);
             list.innerHTML = anyItems ? groups.filter(g => g.items.length).map(g =>
                 '<section><h3 class="font-bold ' + g.cls + ' mb-2">' + g.label + '（' + g.items.length + '）</h3>'
-                + '<div class="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100 shadow-sm">' + g.items.map(t => taskSimpleRowHtml(t)).join('') + '</div></section>'
+                + '<div class="space-y-2">' + g.items.map(t => '<div onclick="selectTaskDetail(\'' + t.id + '\')" class="cursor-pointer ' + (taskSelectedId === t.id ? 'ring-2 ring-indigo-400 rounded-2xl' : '') + '">' + taskRowHtml(t, g.key === 'overdue') + '</div>').join('') + '</div></section>'
             ).join('') : '<p class="font-bold text-slate-400 text-center py-8">このタグのタスクはありません。</p>';
         }
         // ===== タスク入力フォーム（アイコン方式） =====
