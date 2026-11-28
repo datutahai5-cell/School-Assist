@@ -3021,6 +3021,15 @@
             if (weekFooterEl) weekFooterEl.style.display = panelModeActive ? 'none' : '';
             if (weekTitleInput) weekTitleInput.style.width = panelModeActive ? '6.5rem' : '';
             if (table) table.style.minWidth = panelModeActive ? '' : ((daysToShowAll.length > 5) ? '760px' : '600px');
+            if (table) {
+                if (panelModeActive) {
+                    // パネル表示（1日表示）では、祝日などで行が潰れて表が小さくならないよう、画面の下端までの高さを確保する
+                    const tableTop = table.getBoundingClientRect ? table.getBoundingClientRect().top : 0;
+                    table.style.height = Math.max(360, Math.round(window.innerHeight - tableTop - 24)) + 'px';
+                } else {
+                    table.style.height = '';
+                }
+            }
 
             const sundayDate = new Date(currentMonday);
             sundayDate.setDate(currentMonday.getDate() + (showWeekend ? 6 : 4));
