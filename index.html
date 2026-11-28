@@ -2432,7 +2432,7 @@
             const startInfo = (t.start && !t.done && t.start > taskTodayStr()) ? '<span class="text-[11px] font-bold text-teal-600 shrink-0">' + escapeHtml(taskStartLabel(t.start)) + 'から開始</span>' : '';
             return '<div onclick="selectTaskDetail(\'' + t.id + '\')" class="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition ' + (sel ? 'bg-indigo-50' : 'bg-white hover:bg-slate-50') + '" style="border-left:5px solid ' + bar + '">'
                 + '<button type="button" onclick="event.stopPropagation(); toggleTaskDone(\'' + t.id + '\')" class="w-5 h-5 shrink-0 flex items-center justify-center rounded-md border-2 text-[10px] transition ' + chk + '"><i class="fa-solid fa-check"></i></button>'
-                + '<span class="flex-1 min-w-0 truncate font-bold text-sm ' + (t.done ? 'line-through text-slate-400' : 'text-slate-700') + '" title="' + escapeHtml(t.title) + '">' + escapeHtml(t.title) + '</span>'
+                + '<span class="flex-1 min-w-0 break-words font-bold text-sm leading-snug ' + (t.done ? 'line-through text-slate-400' : 'text-slate-700') + '" title="' + escapeHtml(t.title) + '">' + escapeHtml(t.title) + '</span>'
                 + subInfo + tagChips + startInfo
                 + (t.driveLink ? '<i class="fa-brands fa-google-drive text-emerald-500 shrink-0"></i>' : '')
                 + (t.repeat ? '<i class="fa-solid fa-repeat text-slate-300 text-xs shrink-0"></i>' : '')
@@ -2726,7 +2726,7 @@
                         + '<div class="flex items-start gap-1.5 py-1.5 pr-2">'
                         + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" class="w-5 h-5 shrink-0 mt-0.5 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + '">' + (t.done ? '<i class="fa-solid fa-check text-[9px]"></i>' : '') + '</button>'
                         + '<button type="button" onclick="event.stopPropagation(); openTaskPopup(\'' + t.id + '\', event)" class="flex-1 min-w-0 text-left">'
-                        + '<span class="block text-[13px] font-bold truncate ' + (t.done ? 'line-through text-slate-400' : 'text-slate-700') + '">' + escapeHtml(t.title) + '</span>'
+                        + '<span class="block text-[13px] font-bold break-words leading-snug ' + (t.done ? 'line-through text-slate-400' : 'text-slate-700') + '">' + escapeHtml(t.title) + '</span>'
                         + '<span class="block text-[10px] text-slate-400">' + subParts.join(' 〜 ') + '</span>'
                         + '</button></div>'
                         + '<div class="relative h-11"><div class="absolute inset-0 flex">' + bgCells + '</div>' + todayLine + bar + '</div>'
@@ -4229,7 +4229,7 @@
             let html = '<div class="border-2 ' + border + ' rounded-xl shadow-sm overflow-hidden">'
                 + '<div class="flex items-center gap-2 px-2.5 py-2 cursor-pointer" onclick="toggleSideTaskExpand(\'' + t.id + '\')">'
                 + '<button type="button" onclick="event.stopPropagation(); toggleTaskDone(\'' + t.id + '\')" title="' + (t.done ? '未完了に戻す' : '完了にする') + '" class="w-5 h-5 shrink-0 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + ' text-[10px] transition"><i class="fa-solid fa-check"></i></button>'
-                + '<span class="flex-1 min-w-0 truncate font-bold text-sm ' + (t.done ? 'line-through text-slate-400' : 'text-slate-800') + '">' + escapeHtml(t.title) + '</span>'
+                + '<span class="flex-1 min-w-0 break-words font-bold text-sm leading-snug ' + (t.done ? 'line-through text-slate-400' : 'text-slate-800') + '">' + escapeHtml(t.title) + '</span>'
                 + priFlag
                 + (t.repeat ? '<i class="fa-solid fa-repeat text-slate-400 text-xs shrink-0" title="繰り返し"></i>' : '')
                 + driveBtn
