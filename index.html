@@ -1883,13 +1883,21 @@
             else { style = 'background:#fee2e2;color:#b91c1c;'; rel = 'あと' + Math.round((taskParseDate(t.due) - taskParseDate(today)) / 86400000) + '日'; }
             return '<span class="inline-flex items-center gap-1 text-[13px] font-bold rounded-lg px-2 py-0.5" style="' + style + '"><i class="fa-regular fa-calendar-days"></i>' + escapeHtml(main) + (rel ? '<span class="text-[11px]">（' + rel + '）</span>' : '') + '</span>';
         }
+        function taskCardClasses(t, isOverdue) {
+            if (t.done) return 'bg-slate-50 border-slate-200';
+            const lvl = taskPriorityLevel(t);
+            if (lvl === 'high') return 'bg-red-50 ' + (isOverdue ? 'border-red-400' : 'border-red-300');
+            if (lvl === 'mid') return 'bg-amber-50 border-amber-300';
+            if (lvl === 'low') return 'bg-sky-50 border-sky-300';
+            return 'bg-white ' + (isOverdue ? 'border-red-300' : 'border-slate-200');
+        }
         function taskCoversDate(t, key) {
             const s = t.start || t.due, e = t.due || t.start;
             if (!s || !e) return false;
             return s <= key && key <= e;
         }
         function taskRowHtml(t, isOverdue) {
-            const border = (isOverdue && !t.done) ? 'border-red-300' : 'border-slate-200';
+            const border = taskCardClasses(t, isOverdue);
             const badge = taskDueBadgeHtml(t);
             const startChip = (t.start && t.due && !t.done && t.start > taskTodayStr()) ? '<span class="text-[11px] font-bold text-teal-600">' + escapeHtml(taskStartLabel(t.start)) + 'から開始</span>' : '';
             const badgeRow = (badge || startChip) ? '<div class="flex flex-wrap items-center gap-1.5 mt-1">' + badge + startChip + '</div>' : '';
@@ -1919,7 +1927,7 @@
                     ).join('')
                     + '</div></div>';
             }
-            return '<div class="flex items-start gap-2.5 bg-white border-2 ' + border + ' rounded-2xl px-3 py-2.5 shadow-sm">'
+            return '<div class="flex items-start gap-2.5 border-2 ' + border + ' rounded-2xl px-3 py-2.5 shadow-sm">'
                 + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" title="' + (t.done ? '未完了に戻す' : '完了にする') + '" class="mt-0.5 w-6 h-6 shrink-0 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + ' text-xs transition"><i class="fa-solid fa-check"></i></button>'
                 + '<div class="flex-1 min-w-0">'
                 + '<div class="font-bold ' + (t.done ? 'line-through text-slate-400' : 'text-slate-800') + ' break-words">' + escapeHtml(t.title)
@@ -2400,7 +2408,7 @@
                     const pri = taskPriorityLevel(t);
                     const dot = pri === 'high' ? '#ef4444' : (pri === 'mid' ? '#f59e0b' : (pri === 'low' ? '#0ea5e9' : '#94a3b8'));
                     const overdue = !t.done && key < today;
-                    return '<div class="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 ' + (key !== t.due ? 'opacity-70 ' : '') + (t.done ? 'text-slate-400 line-through bg-slate-50' : (overdue ? 'text-red-600 bg-red-50 font-bold' : 'text-slate-700 bg-indigo-50')) + '"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:' + dot + '"></span><span class="truncate">' + escapeHtml(t.title) + '</span></div>';
+                    return '<div class="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 ' + (key !== t.due ? 'opacity-70 ' : '') + (t.done ? 'text-slate-400 line-through bg-slate-50' : (overdue ? 'text-red-600 bg-red-50 font-bold' : (pri === 'high' ? 'text-red-700 bg-red-100' : (pri === 'mid' ? 'text-amber-700 bg-amber-100' : (pri === 'low' ? 'text-sky-700 bg-sky-100' : 'text-slate-700 bg-indigo-50'))))) + '"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:' + dot + '"></span><span class="truncate">' + escapeHtml(t.title) + '</span></div>';
                 }).join('');
                 if (items.length > 3) chips += '<div class="text-[10px] text-slate-400 font-bold px-1">＋' + (items.length - 3) + '件</div>';
                 cells += '<div onclick="selectTaskCalDay(\'' + key + '\')" class="cursor-pointer align-top border ' + (isSel ? 'border-indigo-400 bg-indigo-50/60' : 'border-slate-200 bg-white') + ' rounded-xl p-1.5 min-h-[4.6rem] flex flex-col gap-1 ' + (inMonth ? '' : 'opacity-40') + '">'
@@ -2430,7 +2438,7 @@
         // --- 週表示 ---
         function taskWeekCardHtml(t, isPast, dayKey) {
             const overdue = isPast && !t.done;
-            return '<div class="flex items-start gap-1.5 bg-white border ' + (overdue ? 'border-red-300' : 'border-slate-200') + ' rounded-xl px-2 py-1.5 shadow-sm">'
+            return '<div class="flex items-start gap-1.5 border ' + taskCardClasses(t, overdue) + ' rounded-xl px-2 py-1.5 shadow-sm">'
                 + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" class="w-5 h-5 shrink-0 mt-0.5 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + '">' + (t.done ? '<i class="fa-solid fa-check text-[9px]"></i>' : '') + '</button>'
                 + '<button type="button" onclick="editTask(\'' + t.id + '\')" class="flex-1 min-w-0 text-left">'
                 + '<span class="block text-[13px] font-bold break-words ' + (t.done ? 'line-through text-slate-400' : (overdue ? 'text-red-600' : 'text-slate-700')) + '">' + escapeHtml(t.title) + '</span>'
