@@ -625,6 +625,9 @@
                         <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">時刻
                             <input id="taskTimeInput" type="time" onchange="refreshTaskFormUi()" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
                         </label>
+                        <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">開始日
+                            <input id="taskStartInput" type="date" onchange="refreshTaskFormUi()" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
+                        </label>
                         <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500">繰り返し
                             <select id="taskRepeatInput" onchange="refreshTaskFormUi()" class="border-2 border-slate-300 rounded-xl px-2 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400 bg-white">
                                 <option value="">なし</option>
@@ -1862,7 +1865,9 @@
         function taskRowHtml(t, isOverdue) {
             const dueLabel = taskDueLabel(t);
             const border = (isOverdue && !t.done) ? 'border-red-300' : 'border-slate-200';
-            const sub = (dueLabel || t.memo) ? '<div class="text-xs ' + ((isOverdue && !t.done) ? 'text-red-500 font-bold' : 'text-slate-500') + ' mt-0.5 break-words">' + escapeHtml(dueLabel) + (dueLabel && t.memo ? ' ・ ' : '') + escapeHtml(t.memo || '') + '</div>' : '';
+            const startLabel = (t.start && !t.done && t.start > taskTodayStr()) ? taskStartLabel(t.start) + 'から開始' : '';
+            const subText = [dueLabel, startLabel, t.memo || ''].filter(x => x).join(' ・ ');
+            const sub = subText ? '<div class="text-xs ' + ((isOverdue && !t.done) ? 'text-red-500 font-bold' : 'text-slate-500') + ' mt-0.5 break-words">' + escapeHtml(subText) + '</div>' : '';
             const lvl = taskPriorityLevel(t);
             const priFlag = lvl === 'high' ? ' <i class="fa-solid fa-flag text-red-500 text-xs" title="優先度：高"></i>' : (lvl === 'mid' ? ' <i class="fa-solid fa-flag text-amber-500 text-xs" title="優先度：中"></i>' : (lvl === 'low' ? ' <i class="fa-solid fa-flag text-sky-500 text-xs" title="優先度：低"></i>' : ''));
             let meta = '';
@@ -1915,6 +1920,7 @@
                 { key: 'week', label: '今週', cls: 'text-slate-700', items: [] },
                 { key: 'later', label: 'それ以降', cls: 'text-slate-700', items: [] },
                 { key: 'nodate', label: '期限なし', cls: 'text-slate-700', items: [] },
+                { key: 'waiting', label: '開始待ち', cls: 'text-teal-600', items: [] },
                 { key: 'done', label: '完了済み', cls: 'text-slate-400', items: [] }
             ];
             const byKey = {};
@@ -1927,6 +1933,7 @@
             });
             sorted.forEach(t => {
                 if (t.done) { byKey.done.items.push(t); return; }
+                if (t.start && t.start > today) { byKey.waiting.items.push(t); return; }
                 if (!t.due) byKey.nodate.items.push(t);
                 else if (t.due < today) byKey.overdue.items.push(t);
                 else if (t.due === today) byKey.today.items.push(t);
@@ -1934,6 +1941,7 @@
                 else if (t.due <= sunday) byKey.week.items.push(t);
                 else byKey.later.items.push(t);
             });
+            byKey.waiting.items.sort((a, b) => (a.start !== b.start) ? (a.start < b.start ? -1 : 1) : ((a.createdAt || 0) - (b.createdAt || 0)));
             byKey.done.items.sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
             if (!schoolTasks.length) {
                 list.innerHTML = '<p class="font-bold text-slate-400 text-center py-8">まだタスクがありません。上のフォームから追加できます。</p>';
@@ -1994,8 +2002,20 @@
         function clearTaskDue() {
             const d = document.getElementById('taskDueInput'); if (d) d.value = '';
             const t = document.getElementById('taskTimeInput'); if (t) t.value = '';
+            const st = document.getElementById('taskStartInput'); if (st) st.value = '';
             const r = document.getElementById('taskRepeatInput'); if (r) r.value = '';
             refreshTaskFormUi();
+        }
+        function clearTaskStart() {
+            const st = document.getElementById('taskStartInput'); if (st) st.value = '';
+            refreshTaskFormUi();
+        }
+        function taskStartLabel(start) {
+            if (!start) return '';
+            const d = new Date(start + 'T00:00:00');
+            if (isNaN(d)) return '';
+            const wd = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+            return (d.getMonth() + 1) + '/' + d.getDate() + '（' + wd + '）';
         }
         function clearTaskDrive() {
             const u = document.getElementById('taskDriveUrlInput'); if (u) u.value = '';
@@ -2044,12 +2064,14 @@
             const due = dueEl ? dueEl.value : '';
             const dueTime = timeEl ? timeEl.value : '';
             const repeat = repEl2 ? repEl2.value : '';
+            const startEl2 = document.getElementById('taskStartInput');
+            const start = startEl2 ? startEl2.value : '';
             const driveUrlEl = document.getElementById('taskDriveUrlInput');
             const driveNameEl = document.getElementById('taskDriveNameInput');
             const driveUrl = driveUrlEl ? driveUrlEl.value.trim() : '';
             const driveName = driveNameEl ? driveNameEl.value.trim() : '';
             const dateBtn = document.getElementById('taskDateBtn');
-            if (dateBtn) { dateBtn.style.color = due ? '#6366f1' : ''; dateBtn.style.background = (taskOpenPanel === 'date') ? '#eef2ff' : ''; }
+            if (dateBtn) { dateBtn.style.color = (due || start) ? '#6366f1' : ''; dateBtn.style.background = (taskOpenPanel === 'date') ? '#eef2ff' : ''; }
             const priBtn = document.getElementById('taskPriBtn');
             if (priBtn) { priBtn.style.color = taskFormPriority !== 'none' ? TASK_PRI_META[taskFormPriority].color : ''; priBtn.style.background = (taskOpenPanel === 'priority') ? '#eef2ff' : ''; }
             const tagBtn = document.getElementById('taskTagBtn');
@@ -2068,6 +2090,9 @@
             if (due) {
                 const lbl = taskDueLabel({ due: due, dueTime: dueTime });
                 parts.push('<span class="inline-flex items-center gap-1 text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full px-2.5 py-1"><i class="fa-regular fa-calendar-days"></i>' + escapeHtml(lbl) + (repeat ? ' <i class="fa-solid fa-repeat"></i>' : '') + '<button type="button" onclick="clearTaskDue()" class="text-indigo-300 hover:text-indigo-600 ml-0.5"><i class="fa-solid fa-xmark"></i></button></span>');
+            }
+            if (start) {
+                parts.push('<span class="inline-flex items-center gap-1 text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200 rounded-full px-2.5 py-1"><i class="fa-solid fa-play"></i>開始：' + escapeHtml(taskStartLabel(start)) + '<button type="button" onclick="clearTaskStart()" class="text-teal-300 hover:text-teal-600 ml-0.5"><i class="fa-solid fa-xmark"></i></button></span>');
             }
             if (taskFormPriority !== 'none') {
                 parts.push('<span class="inline-flex items-center gap-1 text-xs font-bold bg-slate-50 text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"><i class="fa-solid fa-flag" style="color:' + TASK_PRI_META[taskFormPriority].color + '"></i>優先度：' + TASK_PRI_META[taskFormPriority].label + '<button type="button" onclick="setTaskPriority(\'none\')" class="text-slate-300 hover:text-slate-500 ml-0.5"><i class="fa-solid fa-xmark"></i></button></span>');
@@ -2134,6 +2159,8 @@
             if (dueEl) dueEl.value = '';
             const timeEl = document.getElementById('taskTimeInput');
             if (timeEl) timeEl.value = '';
+            const startEl = document.getElementById('taskStartInput');
+            if (startEl) startEl.value = '';
             const memoEl = document.getElementById('taskMemoInput');
             if (memoEl) memoEl.value = '';
             const driveUrlEl = document.getElementById('taskDriveUrlInput');
@@ -2159,6 +2186,8 @@
             const title = document.getElementById('taskTitleInput').value.trim();
             if (!title) { showToast('タスクの内容を入力してください'); return; }
             const due = document.getElementById('taskDueInput').value || '';
+            const start = document.getElementById('taskStartInput').value || '';
+            if (start && due && start > due) { showToast('開始日は期限より前にしてください'); return; }
             const dueTime = document.getElementById('taskTimeInput').value || '';
             const memo = document.getElementById('taskMemoInput').value.trim();
             const priority = taskFormPriority;
@@ -2173,11 +2202,11 @@
             if (taskEditId) {
                 saved = schoolTasks.find(t => t.id === taskEditId) || null;
                 if (saved) {
-                    saved.title = title; saved.due = due; saved.dueTime = dueTime;
+                    saved.title = title; saved.due = due; saved.dueTime = dueTime; saved.start = start;
                     saved.memo = memo; saved.priority = priority; saved.repeat = repeat; saved.tags = tags; saved.driveLink = driveLink; saved.subtasks = subtasks;
                 }
             } else {
-                saved = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: title, due: due, dueTime: dueTime, memo: memo, priority: priority, repeat: repeat, tags: tags, driveLink: driveLink, subtasks: subtasks, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
+                saved = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: title, due: due, dueTime: dueTime, start: start, memo: memo, priority: priority, repeat: repeat, tags: tags, driveLink: driveLink, subtasks: subtasks, done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
                 schoolTasks.push(saved);
             }
             const wasEdit = !!taskEditId;
@@ -2195,6 +2224,7 @@
             document.getElementById('taskTitleInput').value = t.title || '';
             document.getElementById('taskDueInput').value = t.due || '';
             document.getElementById('taskTimeInput').value = t.dueTime || '';
+            document.getElementById('taskStartInput').value = t.start || '';
             document.getElementById('taskMemoInput').value = t.memo || '';
             taskFormPriority = taskPriorityLevel(t);
             taskFormTags = Array.isArray(t.tags) ? t.tags.slice() : [];
@@ -2246,7 +2276,16 @@
             if (t.done && t.repeat) {
                 const nd = nextRepeatDate(t.due, t.repeat);
                 if (nd) {
-                    spawned = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: t.title, due: nd, dueTime: t.dueTime || '', memo: t.memo || '', priority: taskPriorityLevel(t), repeat: t.repeat, tags: Array.isArray(t.tags) ? t.tags.slice() : [], driveLink: t.driveLink || null, subtasks: (Array.isArray(t.subtasks) ? t.subtasks : []).map(x => ({ id: x.id, title: x.title, done: false })), done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
+                    let nstart = '';
+                    if (t.start && t.due) {
+                        const off = Math.round((new Date(t.due + 'T00:00:00') - new Date(t.start + 'T00:00:00')) / 86400000);
+                        const nsd = new Date(nd + 'T00:00:00');
+                        nsd.setDate(nsd.getDate() - off);
+                        nstart = taskDateStr(nsd);
+                    } else if (t.start) {
+                        nstart = t.start;
+                    }
+                    spawned = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title: t.title, due: nd, start: nstart, dueTime: t.dueTime || '', memo: t.memo || '', priority: taskPriorityLevel(t), repeat: t.repeat, tags: Array.isArray(t.tags) ? t.tags.slice() : [], driveLink: t.driveLink || null, subtasks: (Array.isArray(t.subtasks) ? t.subtasks : []).map(x => ({ id: x.id, title: x.title, done: false })), done: false, doneAt: null, calEventId: null, createdAt: Date.now() };
                     schoolTasks.push(spawned);
                 }
             }
