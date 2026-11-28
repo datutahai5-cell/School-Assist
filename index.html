@@ -1874,14 +1874,13 @@
                 const future = !t.done && t.start > today;
                 return '<span class="inline-flex items-center gap-1 text-[13px] font-bold rounded-lg px-2 py-0.5" style="background:#ccfbf1;color:#0f766e;"><i class="fa-solid fa-play text-[10px]"></i>' + escapeHtml(taskStartLabel(t.start)) + (future ? 'から開始' : '開始') + '</span>';
             }
-            const label = taskDueLabel(t);
-            const main = (t.start && t.start !== t.due) ? taskStartLabel(t.start) + ' 〜 ' + label : label;
+            const main = '期日：' + taskDueLabel(t);
             let style, rel = '';
             if (t.done) { style = 'background:#f1f5f9;color:#94a3b8;'; }
-            else if (t.due < today) { style = 'background:#fee2e2;color:#b91c1c;'; rel = Math.round((taskParseDate(today) - taskParseDate(t.due)) / 86400000) + '日過ぎ'; }
-            else if (t.due === today) { style = 'background:#4f46e5;color:#ffffff;'; rel = '今日まで'; }
-            else if (t.due === taskDateStr(new Date(Date.now() + 86400000))) { style = 'background:#e0e7ff;color:#3730a3;'; rel = '明日まで'; }
-            else { style = 'background:#eef2ff;color:#4338ca;'; rel = 'あと' + Math.round((taskParseDate(t.due) - taskParseDate(today)) / 86400000) + '日'; }
+            else if (t.due < today) { style = 'background:#991b1b;color:#ffffff;'; rel = Math.round((taskParseDate(today) - taskParseDate(t.due)) / 86400000) + '日過ぎ'; }
+            else if (t.due === today) { style = 'background:#dc2626;color:#ffffff;'; rel = '今日まで'; }
+            else if (t.due === taskDateStr(new Date(Date.now() + 86400000))) { style = 'background:#fecaca;color:#991b1b;'; rel = '明日まで'; }
+            else { style = 'background:#fee2e2;color:#b91c1c;'; rel = 'あと' + Math.round((taskParseDate(t.due) - taskParseDate(today)) / 86400000) + '日'; }
             return '<span class="inline-flex items-center gap-1 text-[13px] font-bold rounded-lg px-2 py-0.5" style="' + style + '"><i class="fa-regular fa-calendar-days"></i>' + escapeHtml(main) + (rel ? '<span class="text-[11px]">（' + rel + '）</span>' : '') + '</span>';
         }
         function taskCoversDate(t, key) {
@@ -2436,7 +2435,7 @@
                 + '<button type="button" onclick="editTask(\'' + t.id + '\')" class="flex-1 min-w-0 text-left">'
                 + '<span class="block text-[13px] font-bold break-words ' + (t.done ? 'line-through text-slate-400' : (overdue ? 'text-red-600' : 'text-slate-700')) + '">' + escapeHtml(t.title) + '</span>'
                 + (t.dueTime ? '<span class="block text-[11px] text-slate-400">' + escapeHtml(t.dueTime) + '</span>' : '')
-                + (t.due && dayKey && dayKey !== t.due ? '<span class="block text-[11px] font-bold text-indigo-600"><i class="fa-regular fa-calendar-days"></i> 期限：' + escapeHtml(taskDueLabel(t)) + '</span>' : '')
+                + (t.due && dayKey && dayKey !== t.due ? '<span class="block text-[11px] font-bold text-red-600"><i class="fa-regular fa-calendar-days"></i> 期限：' + escapeHtml(taskDueLabel(t)) + '</span>' : '')
                 + (t.start && !t.done && t.start > taskTodayStr() ? '<span class="block text-[11px] text-teal-600 font-bold">' + escapeHtml(taskStartLabel(t.start)) + 'から開始</span>' : '')
                 + '</button></div>';
         }
