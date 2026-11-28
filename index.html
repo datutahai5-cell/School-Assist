@@ -705,7 +705,7 @@
         <!-- VIEW: MEMOS -->
         <div id="view-memos" class="hidden space-y-4">
             <header class="bg-teal-500 text-white rounded-2xl p-3 sm:p-4 shadow-md flex flex-wrap justify-between items-center gap-3">
-                <button onclick="showHomeView()" class="flex items-center gap-2 bg-white/15 hover:bg-white/25 rounded-xl px-3 py-2 font-bold text-sm transition touch-target">
+                <button onclick="backFromMemos()" class="flex items-center gap-2 bg-white/15 hover:bg-white/25 rounded-xl px-3 py-2 font-bold text-sm transition touch-target">
                     <i class="fa-solid fa-arrow-left"></i> 戻る
                 </button>
                 <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2">
@@ -2765,7 +2765,16 @@
             } catch (e) { schoolMemos = []; }
         }
         function saveMemos() { localStorage.setItem(MEMOS_KEY, JSON.stringify(schoolMemos)); }
+        let memoReturnView = 'home';
+        function backFromMemos() {
+            if (memoReturnView === 'detail') showDetailView();
+            else if (memoReturnView === 'tasks') showTasksView();
+            else showHomeView();
+        }
         function showMemosView() {
+            if (!document.getElementById('view-detail').classList.contains('hidden')) memoReturnView = 'detail';
+            else if (!document.getElementById('view-tasks').classList.contains('hidden')) memoReturnView = 'tasks';
+            else if (!document.getElementById('view-home').classList.contains('hidden')) memoReturnView = 'home';
             document.getElementById('view-home').classList.add('hidden');
             document.getElementById('view-detail').classList.add('hidden');
             document.getElementById('view-tasks').classList.add('hidden');
