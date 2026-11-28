@@ -612,6 +612,7 @@
 
                 <div id="taskDetailPanel" class="hidden w-full lg:w-80 shrink-0"></div>
             </div>
+            <div id="taskPopup" class="hidden fixed z-50"></div>
         </div>
 
         <!-- タスク追加・編集ビュー -->
@@ -1966,6 +1967,7 @@
             if (summary) summary.textContent = '未完了 ' + undone.length + '件';
             renderTaskSidebarTags();
             renderTaskDetail();
+            if (taskPopupId) renderTaskPopup();
             document.querySelectorAll('.task-view-btn').forEach(b => {
                 const on = b.dataset && b.dataset.mode === taskViewMode;
                 b.style.borderColor = on ? '#6366f1' : '#e2e8f0';
@@ -2289,6 +2291,7 @@
             showToast(wasEdit ? 'タスクを更新しました' : 'タスクを追加しました');
         }
         function editTask(id) {
+            closeTaskPopup();
             const t = schoolTasks.find(x => x.id === id);
             if (!t) return;
             taskEditId = id;
@@ -2459,6 +2462,74 @@
                 + '</div></div>';
         }
 
+
+        // ===== タスクの吹き出し（カレンダー・週・ガントから開く） =====
+        let taskPopupId = null;
+        let taskPopupPos = { x: 0, y: 0 };
+        function openTaskPopup(id, ev) {
+            taskPopupId = id;
+            if (ev && typeof ev.clientX === 'number') taskPopupPos = { x: ev.clientX, y: ev.clientY };
+            renderTaskPopup();
+        }
+        function closeTaskPopup() {
+            taskPopupId = null;
+            const p = document.getElementById('taskPopup');
+            if (p) { p.classList.add('hidden'); p.innerHTML = ''; }
+        }
+        function renderTaskPopup() {
+            const p = document.getElementById('taskPopup');
+            if (!p) return;
+            const t = schoolTasks.find(x => x.id === taskPopupId);
+            if (!t) { closeTaskPopup(); return; }
+            const lvl = taskPriorityLevel(t);
+            const meta = TASK_PRI_META[lvl];
+            const subArr = Array.isArray(t.subtasks) ? t.subtasks : [];
+            const subDone = subArr.filter(x => x.done).length;
+            const subsHtml = subArr.length ? '<div><div class="text-xs font-bold text-slate-400 mb-1.5">サブタスク（' + subDone + '/' + subArr.length + '）</div><div class="space-y-1.5">' + subArr.map(st =>
+                '<div class="flex items-center gap-2">'
+                + '<button type="button" onclick="toggleSubtaskDone(\'' + t.id + '\', \'' + st.id + '\')" class="w-5 h-5 shrink-0 flex items-center justify-center rounded-md border-2 text-[9px] transition ' + (st.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + '"><i class="fa-solid fa-check"></i></button>'
+                + '<span class="text-sm break-words ' + (st.done ? 'line-through text-slate-400' : 'text-slate-700') + '">' + escapeHtml(st.title) + '</span></div>'
+            ).join('') + '</div></div>' : '';
+            const tagsHtml = (Array.isArray(t.tags) && t.tags.length) ? '<div class="flex flex-wrap gap-1.5">' + t.tags.map(nm => '<span class="text-[11px] font-bold bg-amber-100 text-amber-800 rounded-full px-2 py-0.5"><i class="fa-solid fa-tag text-amber-500 mr-0.5"></i>' + escapeHtml(nm) + '</span>').join('') + '</div>' : '';
+            const memoHtml = t.memo ? '<p class="text-sm text-slate-600 whitespace-pre-wrap break-words">' + escapeHtml(t.memo) + '</p>' : '';
+            const startHtml = t.start ? '<span class="text-[12px] font-bold text-teal-600"><i class="fa-solid fa-play text-[9px]"></i> 開始：' + escapeHtml(taskStartLabel(t.start)) + '</span>' : '';
+            const repeatHtml = t.repeat ? '<div class="text-[13px] font-bold text-slate-500"><i class="fa-solid fa-repeat"></i> 繰り返し：' + (t.repeat === 'weekly' ? '毎週' : '毎月') + '</div>' : '';
+            const driveHtml = t.driveLink ? '<a href="' + escapeHtml(t.driveLink.url) + '" target="_blank" rel="noopener" class="flex items-center gap-2 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 text-slate-700 font-bold text-sm rounded-xl px-3 py-2.5 transition"><i class="fa-brands fa-google-drive text-emerald-500 text-lg"></i><span class="flex-1 min-w-0 truncate">' + escapeHtml(t.driveLink.name || 'ドライブの資料') + '</span><i class="fa-solid fa-arrow-up-right-from-square text-xs text-slate-400"></i></a>' : '';
+            p.innerHTML = '<div class="relative bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 space-y-3">'
+                + '<div class="task-popup-tail absolute w-3.5 h-3.5 bg-white" style="transform:rotate(45deg);"></div>'
+                + '<div class="flex items-center justify-between gap-2">'
+                + '<span class="flex items-center gap-2 flex-wrap">' + taskDueBadgeHtml(t) + startHtml + '</span>'
+                + '<span class="flex items-center gap-1.5 shrink-0"><i class="fa-solid fa-flag" style="color:' + meta.color + '" title="' + (lvl === 'none' ? '優先度なし' : '優先度：' + meta.label) + '"></i>'
+                + '<button type="button" onclick="closeTaskPopup()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 transition"><i class="fa-solid fa-xmark"></i></button></span></div>'
+                + '<div class="flex items-start gap-2.5">'
+                + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" class="mt-0.5 w-6 h-6 shrink-0 flex items-center justify-center rounded-md border-2 text-xs transition ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + '"><i class="fa-solid fa-check"></i></button>'
+                + '<h3 class="flex-1 min-w-0 font-bold text-base break-words ' + (t.done ? 'line-through text-slate-400' : 'text-slate-800') + '">' + escapeHtml(t.title) + '</h3></div>'
+                + repeatHtml + tagsHtml + memoHtml + subsHtml + driveHtml
+                + '<div class="flex gap-2 pt-0.5">'
+                + '<button type="button" onclick="editTask(\'' + t.id + '\')" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-sm rounded-xl px-3 py-2 transition touch-target"><i class="fa-solid fa-pen"></i> 編集</button>'
+                + '<button type="button" onclick="deleteTask(\'' + t.id + '\')" class="bg-white hover:bg-red-50 border-2 border-slate-200 hover:border-red-300 text-slate-500 hover:text-red-500 font-bold text-sm rounded-xl px-3 py-2 transition touch-target"><i class="fa-solid fa-trash"></i> 削除</button>'
+                + '</div></div>';
+            p.classList.remove('hidden');
+            const W = 330;
+            const vw = window.innerWidth || 360, vh = window.innerHeight || 640;
+            p.style.width = W + 'px';
+            const left = Math.max(12, Math.min(taskPopupPos.x - 24, vw - W - 12));
+            p.style.left = left + 'px';
+            const h = p.offsetHeight || 400;
+            let top = taskPopupPos.y + 14;
+            let below = true;
+            if (top + h > vh - 12) { top = Math.max(12, taskPopupPos.y - h - 14); below = false; }
+            p.style.top = top + 'px';
+            const tail = p.querySelector('.task-popup-tail');
+            if (tail) {
+                tail.style.left = Math.max(14, Math.min(taskPopupPos.x - left - 7, W - 30)) + 'px';
+                if (below) { tail.style.top = '-8px'; tail.style.bottom = 'auto'; tail.style.borderLeft = '1px solid #e2e8f0'; tail.style.borderTop = '1px solid #e2e8f0'; tail.style.borderRight = 'none'; tail.style.borderBottom = 'none'; }
+                else { tail.style.bottom = '-8px'; tail.style.top = 'auto'; tail.style.borderRight = '1px solid #e2e8f0'; tail.style.borderBottom = '1px solid #e2e8f0'; tail.style.borderLeft = 'none'; tail.style.borderTop = 'none'; }
+            }
+        }
+        document.addEventListener('click', (e) => { if (taskPopupId && !(e.target && e.target.closest && e.target.closest('#taskPopup'))) closeTaskPopup(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && taskPopupId) closeTaskPopup(); });
+
         // ===== タスクの表示切り替え（カレンダー／週／ガント） =====
         let taskViewMode = 'list';
         try { const v = localStorage.getItem('edu_task_view'); if (v && ['list', 'calendar', 'week', 'gantt'].includes(v)) taskViewMode = v; } catch (e) {}
@@ -2470,6 +2541,7 @@
         const GANTT_DAYS = 28;
 
         function setTaskView(mode) {
+            closeTaskPopup();
             taskViewMode = mode;
             try { localStorage.setItem('edu_task_view', mode); } catch (e) {}
             renderTasks();
@@ -2519,7 +2591,7 @@
                     const pri = taskPriorityLevel(t);
                     const dot = pri === 'high' ? '#ef4444' : (pri === 'mid' ? '#f59e0b' : (pri === 'low' ? '#0ea5e9' : '#94a3b8'));
                     const overdue = !t.done && key < today;
-                    return '<div class="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 ' + (key !== t.due ? 'opacity-70 ' : '') + (t.done ? 'text-slate-400 line-through bg-slate-50' : (overdue ? 'text-red-600 bg-red-50 font-bold' : (pri === 'high' ? 'text-red-800 bg-red-200' : (pri === 'mid' ? 'text-amber-800 bg-amber-200' : (pri === 'low' ? 'text-sky-800 bg-sky-200' : 'text-slate-700 bg-indigo-50'))))) + '"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:' + dot + '"></span><span class="truncate">' + escapeHtml(t.title) + '</span></div>';
+                    return '<div onclick="event.stopPropagation(); openTaskPopup(\'' + t.id + '\', event)" title="' + escapeHtml(t.title) + '" class="flex items-center gap-1 text-[11px] leading-tight rounded px-1 py-0.5 cursor-pointer hover:opacity-80 ' + (key !== t.due ? 'opacity-70 ' : '') + (t.done ? 'text-slate-400 line-through bg-slate-50' : (overdue ? 'text-red-600 bg-red-50 font-bold' : (pri === 'high' ? 'text-red-800 bg-red-200' : (pri === 'mid' ? 'text-amber-800 bg-amber-200' : (pri === 'low' ? 'text-sky-800 bg-sky-200' : 'text-slate-700 bg-indigo-50'))))) + '"><span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:' + dot + '"></span><span class="truncate">' + escapeHtml(t.title) + '</span></div>';
                 }).join('');
                 if (items.length > 3) chips += '<div class="text-[10px] text-slate-400 font-bold px-1">＋' + (items.length - 3) + '件</div>';
                 cells += '<div onclick="selectTaskCalDay(\'' + key + '\')" class="cursor-pointer align-top border ' + (isSel ? 'border-indigo-400 bg-indigo-50/60' : 'border-slate-200 bg-white') + ' rounded-xl p-1.5 min-h-[4.6rem] flex flex-col gap-1 ' + (inMonth ? '' : 'opacity-40') + '">'
@@ -2551,7 +2623,7 @@
             const overdue = isPast && !t.done;
             return '<div class="flex items-start gap-1.5 border ' + taskCardClasses(t, overdue) + ' rounded-xl px-2 py-1.5 shadow-sm">'
                 + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" class="w-5 h-5 shrink-0 mt-0.5 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + '">' + (t.done ? '<i class="fa-solid fa-check text-[9px]"></i>' : '') + '</button>'
-                + '<button type="button" onclick="editTask(\'' + t.id + '\')" class="flex-1 min-w-0 text-left">'
+                + '<button type="button" onclick="event.stopPropagation(); openTaskPopup(\'' + t.id + '\', event)" class="flex-1 min-w-0 text-left">'
                 + '<span class="block text-[13px] font-bold break-words ' + (t.done ? 'line-through text-slate-400' : (overdue ? 'text-red-600' : 'text-slate-700')) + '">' + escapeHtml(t.title) + '</span>'
                 + (t.dueTime ? '<span class="block text-[11px] text-slate-400">' + escapeHtml(t.dueTime) + '</span>' : '')
                 + (t.due && dayKey && dayKey !== t.due ? '<span class="block text-[11px] font-bold text-red-600"><i class="fa-regular fa-calendar-days"></i> 期限：' + escapeHtml(taskDueLabel(t)) + '</span>' : '')
@@ -2637,7 +2709,7 @@
                     else if (t.due) { from = to = eIdx; cls = t.done ? 'background:#cbd5e1;' : ((t.due < today) ? 'background:#f87171;' : 'background:#fbbf24;'); }
                     else { from = Math.max(0, sIdx); to = GANTT_DAYS - 1; cls = t.done ? 'background:#cbd5e1;' : 'background:linear-gradient(90deg,#2dd4bf,rgba(45,212,191,0.12));'; }
                     if (to >= 0 && from < GANTT_DAYS && to >= from) {
-                        bar = '<div class="absolute top-1/2 -translate-y-1/2 h-4 rounded-full" style="left:' + (from / GANTT_DAYS * 100).toFixed(2) + '%;width:' + ((to - from + 1) / GANTT_DAYS * 100).toFixed(2) + '%;' + cls + '" title="' + escapeHtml(t.title) + '"></div>';
+                        bar = '<div onclick="event.stopPropagation(); openTaskPopup(\'' + t.id + '\', event)" class="absolute top-1/2 -translate-y-1/2 h-4 rounded-full cursor-pointer" style="left:' + (from / GANTT_DAYS * 100).toFixed(2) + '%;width:' + ((to - from + 1) / GANTT_DAYS * 100).toFixed(2) + '%;' + cls + '" title="' + escapeHtml(t.title) + '"></div>';
                     }
                     const subParts = [];
                     if (t.start) subParts.push('開始 ' + taskShortDate(t.start));
@@ -2645,7 +2717,7 @@
                     return '<div class="grid border-b border-slate-100" style="grid-template-columns:10rem 1fr;">'
                         + '<div class="flex items-start gap-1.5 py-1.5 pr-2">'
                         + '<button type="button" onclick="toggleTaskDone(\'' + t.id + '\')" class="w-5 h-5 shrink-0 mt-0.5 flex items-center justify-center rounded-md border-2 ' + (t.done ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300 text-transparent hover:border-indigo-400') + '">' + (t.done ? '<i class="fa-solid fa-check text-[9px]"></i>' : '') + '</button>'
-                        + '<button type="button" onclick="editTask(\'' + t.id + '\')" class="flex-1 min-w-0 text-left">'
+                        + '<button type="button" onclick="event.stopPropagation(); openTaskPopup(\'' + t.id + '\', event)" class="flex-1 min-w-0 text-left">'
                         + '<span class="block text-[13px] font-bold truncate ' + (t.done ? 'line-through text-slate-400' : 'text-slate-700') + '">' + escapeHtml(t.title) + '</span>'
                         + '<span class="block text-[10px] text-slate-400">' + subParts.join(' 〜 ') + '</span>'
                         + '</button></div>'
