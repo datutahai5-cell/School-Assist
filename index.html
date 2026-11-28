@@ -852,14 +852,14 @@
                         <span id="sidePanelDayLabel" class="text-xs sm:text-sm font-bold text-slate-800"></span>
                         <button onclick="shiftSidePanelDay(1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 font-bold" title="次の日"><i class="fa-solid fa-chevron-right text-xs"></i></button>
                     </div>
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-calendar-week text-emerald-600 mr-1.5"></i>週予定</h3>
-                        <span id="sidePanelWeekLabel" class="text-[11px] font-bold text-slate-500"></span>
-                    </div>
-                    <div class="flex gap-3 flex-1 min-h-0">
-                        <div class="flex flex-col flex-1 min-w-0 min-h-0">
-                            <div class="border border-slate-300 rounded-xl overflow-hidden bg-slate-50 flex-1 flex flex-col w-full" style="min-height:320px;">
-                                <iframe id="sidePreviewFrame" class="w-full hidden bg-white flex-1 min-h-0" title="週予定プレビュー"></iframe>
+                    <div class="flex gap-4 flex-1 min-h-0 flex-wrap">
+                        <div class="flex flex-col shrink-0" style="width:min(430px,100%);">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-calendar-week text-emerald-600 mr-1.5"></i>週予定</h3>
+                                <span id="sidePanelWeekLabel" class="text-[11px] font-bold text-slate-500"></span>
+                            </div>
+                            <div class="border border-slate-300 rounded-xl overflow-hidden bg-slate-50 flex flex-col w-full" style="height:380px;">
+                                <iframe id="sidePreviewFrame" class="w-full hidden bg-white flex-1 min-h-0 h-full" title="週予定プレビュー"></iframe>
                                 <div id="sidePreviewEmpty" class="p-4 text-xs text-slate-500 leading-relaxed flex-1">
                                     この週の週予定はまだ登録されていません。<br>
                                     ドライブの「R8 週予定」フォルダにスキャンを入れると、毎朝7時に自動で登録されます。下の欄にリンクを貼っても表示できます。
@@ -874,6 +874,13 @@
                                 <input id="sideLinkInput" type="text" placeholder="https://drive.google.com/file/d/..." class="flex-1 min-w-0 text-[11px] text-slate-500 border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400">
                                 <button onclick="saveSidePanelLink()" class="bg-slate-600 hover:bg-slate-500 text-white text-[10px] font-bold px-2 py-1 rounded transition">保存</button>
                             </div>
+                        </div>
+                        <div class="flex flex-col flex-1 min-w-[230px] min-h-0">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-list-check text-indigo-500 mr-1.5"></i>タスク</h3>
+                                <button type="button" onclick="openTaskFormForSidePanelDay()" class="bg-indigo-500 hover:bg-indigo-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition">＋ 追加</button>
+                            </div>
+                            <div id="sideTaskList" class="flex-1 min-h-0 overflow-y-auto space-y-2"></div>
                         </div>
                     </div>
                   </div>
@@ -2094,6 +2101,7 @@
             st.done = !st.done;
             saveTasks();
             renderTasks();
+            renderSidePanelTasks();
         }
 
         function resetTaskForm() {
@@ -2222,6 +2230,7 @@
             }
             saveTasks();
             renderTasks();
+            renderSidePanelTasks();
             taskCalSync(t, 'upsert');
             if (spawned) taskCalSync(spawned, 'upsert');
         }
@@ -3580,6 +3589,33 @@
                 if (preview) { openBtn.href = driveOpenUrl(url); openBtn.classList.remove('hidden'); }
                 else openBtn.classList.add('hidden');
             }
+            renderSidePanelTasks();
+        }
+
+        function renderSidePanelTasks() {
+            const list = document.getElementById('sideTaskList');
+            if (!list) return;
+            const f = sidePanelFocusDate();
+            const key = getDateKey(f.date);
+            const items = schoolTasks.filter(t => t.due === key).sort((a, b) => {
+                if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+                const ta = a.dueTime || '', tb = b.dueTime || '';
+                if (ta !== tb) return ta < tb ? -1 : 1;
+                return (a.createdAt || 0) - (b.createdAt || 0);
+            });
+            if (!items.length) {
+                list.innerHTML = '<p class="text-xs text-slate-400 font-bold text-center py-6">この日のタスクはありません</p>';
+                return;
+            }
+            list.innerHTML = items.map(t => taskRowHtml(t, false)).join('');
+        }
+
+        function openTaskFormForSidePanelDay() {
+            openTaskForm();
+            const f = sidePanelFocusDate();
+            const dueEl = document.getElementById('taskDueInput');
+            if (dueEl) dueEl.value = getDateKey(f.date);
+            if (typeof refreshTaskFormUi === 'function') refreshTaskFormUi();
         }
 
         function saveSidePanelLink() {
